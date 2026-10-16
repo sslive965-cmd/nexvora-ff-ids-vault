@@ -1,0 +1,144 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#050805">
+<title>NEXVORA | Vault Access</title>
+<style>
+:root{--bg:#050805;--panel:#0b120c;--green:#39ff78;--soft:#a0ffb7;--muted:#78a985}
+*{box-sizing:border-box}
+body{margin:0;min-height:100vh;display:grid;place-items:center;padding:22px;background:radial-gradient(ellipse at top,#10351b,transparent 60%),var(--bg);font-family:Arial,sans-serif;color:var(--soft)}
+.card{width:min(430px,100%);padding:30px 23px;border:1px solid #39ff7840;border-radius:15px;background:#071009ed;box-shadow:0 0 45px #39ff7810}
+.brand{text-align:center;color:var(--green);font-weight:900;letter-spacing:4px;font-size:24px;text-shadow:0 0 18px #39ff7860}
+.subtitle{text-align:center;color:var(--muted);font-size:11px;letter-spacing:3px;margin:12px 0 26px}
+.tabs{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:23px}
+button{cursor:pointer;font-weight:800;letter-spacing:1px}
+.tab{padding:13px;border:1px solid #39ff7830;border-radius:5px;background:#09130b;color:var(--muted)}
+.tab.active{background:var(--green);color:#031006;border-color:var(--green)}
+label{display:block;color:var(--soft);font-size:12px;margin:15px 0 8px}
+input{width:100%;padding:14px;border:1px solid #39ff7835;border-radius:5px;background:#030704;color:var(--soft);outline:none}
+input:focus{border-color:var(--green);box-shadow:0 0 12px #39ff7818}
+.primary{width:100%;margin-top:22px;padding:15px;border:0;border-radius:5px;background:linear-gradient(100deg,#39ff78,#a0ffb7);color:#031006}
+.back{display:block;text-align:center;color:var(--muted);text-decoration:none;margin-top:20px;font-size:12px}
+#message{font-size:12px;line-height:1.7;color:var(--green);margin-top:15px;overflow-wrap:anywhere}
+.note{color:#78a985;font-size:11px;line-height:1.7;text-align:center;margin-top:18px}
+[hidden]{display:none!important}
+</style>
+</head>
+<body>
+<main class="card">
+  <div class="brand">NEXVORA</div>
+  <div class="subtitle">FF IDs VAULT ACCESS</div>
+
+  <div class="tabs">
+    <button class="tab active" id="loginTab" type="button">LOGIN</button>
+    <button class="tab" id="registerTab" type="button">REGISTER</button>
+  </div>
+
+  <form id="authForm">
+    <div id="usernameWrap" hidden>
+      <label for="username">USERNAME</label>
+      <input id="username" name="username" autocomplete="username" maxlength="24" placeholder="Choose a username">
+    </div>
+
+    <label for="email">EMAIL ADDRESS</label>
+    <input id="email" name="email" type="email" autocomplete="email" required placeholder="you@example.com">
+
+    <label for="password">PASSWORD</label>
+    <input id="password" name="password" type="password" autocomplete="current-password" minlength="8" required placeholder="At least 8 characters">
+
+    <button class="primary" id="submitBtn" type="submit">ENTER VAULT</button>
+    <div id="message" role="status" aria-live="polite"></div>
+  </form>
+
+  <div class="note">Use your own account. Never share your password or login codes.</div>
+  <a class="back" href="index.html">← BACK TO HOME</a>
+</main>
+
+<script type="module">
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+
+const SUPABASE_URL = 'https://eggcveabpqldhcpzcmcr.supabase.co';
+const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_IVWNe_8YmgLmaXUHOymn1Q_t7Kso8Bd';
+
+const supabase = createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
+const form = document.getElementById('authForm');
+const usernameWrap = document.getElementById('usernameWrap');
+const usernameInput = document.getElementById('username');
+const passwordInput = document.getElementById('password');
+const submitBtn = document.getElementById('submitBtn');
+const message = document.getElementById('message');
+const loginTab = document.getElementById('loginTab');
+const registerTab = document.getElementById('registerTab');
+
+let mode = 'login';
+
+function setMode(nextMode) {
+  mode = nextMode;
+  const registering = mode === 'register';
+  usernameWrap.hidden = !registering;
+  usernameInput.required = registering;
+  passwordInput.autocomplete = registering ? 'new-password' : 'current-password';
+  submitBtn.textContent = registering ? 'CREATE ACCOUNT' : 'ENTER VAULT';
+  loginTab.classList.toggle('active', !registering);
+  registerTab.classList.toggle('active', registering);
+  message.textContent = '';
+}
+
+loginTab.addEventListener('click', () => setMode('login'));
+registerTab.addEventListener('click', () => setMode('register'));
+
+form.addEventListener('submit', async (event) => {
+  event.preventDefault();
+  message.textContent = '';
+  submitBtn.disabled = true;
+  submitBtn.textContent = 'PLEASE WAIT...';
+
+  const email = document.getElementById('email').value.trim();
+  const password = passwordInput.value;
+  const username = usernameInput.value.trim();
+
+  try {
+    if (mode === 'register') {
+      if (username.length < 3) {
+        throw new Error('Username must contain at least 3 characters.');
+      }
+
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: { username }
+        }
+      });
+
+      if (error) throw error;
+
+      if (!data.session) {
+        message.textContent = 'Account request received. If email confirmation is enabled in Supabase, confirm your email before logging in.';
+        return;
+      }
+
+      window.location.href = 'vault.html';
+    } else {
+      const { error } = await supabase.auth.signInWithPassword({
+        email,
+        password
+      });
+
+      if (error) throw error;
+      window.location.href = 'vault.html';
+    }
+  } catch (error) {
+    message.textContent = error.message || 'Something went wrong. Please try again.';
+  } finally {
+    submitBtn.disabled = false;
+    submitBtn.textContent = mode === 'register' ? 'CREATE ACCOUNT' : 'ENTER VAULT';
+  }
+});
+</script>
+</body>
+  </html>
+  
