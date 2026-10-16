@@ -1,0 +1,159 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#050805">
+<title>NEXVORA | Admin Console</title>
+<style>
+:root{--bg:#050805;--panel:#0b120c;--green:#39ff78;--soft:#a0ffb7;--muted:#78a985}
+*{box-sizing:border-box}
+body{margin:0;min-height:100vh;background:radial-gradient(ellipse at top,#102a17,transparent 48%),var(--bg);font-family:Arial,sans-serif;color:var(--soft)}
+header{padding:19px 16px;border-bottom:1px solid #39ff7830;display:flex;justify-content:space-between;align-items:center;gap:12px}
+.brand{font-size:18px;font-weight:900;letter-spacing:3px;color:var(--green)}
+a,button{cursor:pointer}
+a{color:var(--green);text-decoration:none;font-size:12px}
+main{width:min(900px,100%);margin:auto;padding:25px 15px 45px}
+h1{font-size:clamp(25px,6vw,38px);color:var(--green)}
+h2{font-size:16px;color:var(--green)}
+p{font-size:12px;color:var(--muted);line-height:1.8}
+.panel{margin-top:17px;padding:20px 17px;border:1px solid #39ff7830;border-radius:9px;background:#08100a}
+label{display:block;font-size:12px;margin:15px 0 8px}
+input,select,textarea{width:100%;padding:12px;border:1px solid #39ff7835;border-radius:5px;background:#030704;color:var(--soft);font:inherit}
+textarea{min-height:85px;resize:vertical}
+button{padding:12px 15px;border:1px solid #39ff7840;border-radius:5px;background:#0b120c;color:var(--green);font-weight:800}
+.primary{width:100%;margin-top:17px;background:var(--green);color:#031006;border:0}
+.tabs{display:flex;flex-wrap:wrap;gap:8px;margin:18px 0}
+.tab.active{background:var(--green);color:#031006}
+#message{font-size:12px;line-height:1.8;color:var(--green);overflow-wrap:anywhere}
+.warning{border:1px solid #39ff7840;padding:14px;border-radius:6px;color:var(--soft);font-size:12px;line-height:1.8}
+.muted{color:var(--muted)}
+[hidden]{display:none!important}
+</style>
+</head>
+<body>
+<header>
+  <div class="brand">NEXVORA / ADMIN</div>
+  <a href="index.html">← MAIN WEBSITE</a>
+</header>
+
+<main>
+  <h1>ADMIN CONSOLE</h1>
+  <p>Secure management workspace for authorized administrators.</p>
+
+  <section class="panel" id="loginPanel">
+    <h2>ADMIN AUTHENTICATION</h2>
+    <p>Sign in with the designated administrator account. Signing in alone does not grant administrator permissions.</p>
+    <form id="adminLogin">
+      <label for="email">ADMIN EMAIL</label>
+      <input id="email" type="email" autocomplete="username" required placeholder="Administrator email">
+      <label for="password">PASSWORD</label>
+      <input id="password" type="password" autocomplete="current-password" required placeholder="Your password">
+      <button class="primary" type="submit">SIGN IN SECURELY</button>
+    </form>
+  </section>
+
+  <section class="panel" id="consolePanel" hidden>
+    <h2>ADMIN WORKSPACE</h2>
+    <div class="warning">
+      <strong>ACCESS CHECK REQUIRED</strong>
+      <p class="muted">Your account is signed in, but this page has not yet verified an administrator role on a trusted server. Management actions remain disabled until secure authorization is configured.</p>
+    </div>
+
+    <div class="tabs">
+      <button class="tab active" type="button" data-tab="overview">OVERVIEW</button>
+      <button class="tab" type="button" data-tab="listings">LISTINGS</button>
+      <button class="tab" type="button" data-tab="orders">ORDERS</button>
+      <button class="tab" type="button" data-tab="payments">PAYMENTS</button>
+      <button class="tab" type="button" data-tab="refunds">REFUNDS</button>
+      <button class="tab" type="button" data-tab="customers">CUSTOMERS</button>
+    </div>
+
+    <div id="sectionContent">
+      <h2 id="sectionTitle">OVERVIEW</h2>
+      <p id="sectionText">Administrator verification and secure database permissions must be configured before records can be managed.</p>
+    </div>
+    <button id="logoutBtn" type="button">SIGN OUT</button>
+  </section>
+
+  <div id="message" role="status" aria-live="polite"></div>
+</main>
+
+<script type="module">
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+
+const supabase = createClient(
+  'https://eggcveabpqldhcpzcmcr.supabase.co',
+  'sb_publishable_IVWNe_8YmgLmaXUHOymn1Q_t7Kso8Bd'
+);
+
+const message = document.getElementById('message');
+const loginPanel = document.getElementById('loginPanel');
+const consolePanel = document.getElementById('consolePanel');
+
+async function refreshSession() {
+  const { data, error } = await supabase.auth.getSession();
+
+  if (error || !data.session) {
+    loginPanel.hidden = false;
+    consolePanel.hidden = true;
+    return;
+  }
+
+  loginPanel.hidden = true;
+  consolePanel.hidden = false;
+}
+
+document.getElementById('adminLogin').addEventListener('submit', async (event) => {
+  event.preventDefault();
+  message.textContent = 'Checking account...';
+
+  const email = document.getElementById('email').value.trim();
+  const password = document.getElementById('password').value;
+
+  const { error } = await supabase.auth.signInWithPassword({ email, password });
+
+  if (error) {
+    message.textContent = 'Sign-in failed. Check your credentials and try again.';
+    return;
+  }
+
+  message.textContent = 'Signed in. Administrator permissions are not configured yet.';
+  await refreshSession();
+});
+
+const sections = {
+  overview: ['OVERVIEW', 'Secure role verification is required before enabling administration.'],
+  listings: ['LISTINGS', 'Listing management is not connected. No listing changes can be made from this page yet.'],
+  orders: ['ORDERS', 'Order records are not connected.'],
+  payments: ['PAYMENTS', 'Payment review is not connected. Never mark a payment verified without checking it securely.'],
+  refunds: ['REFUNDS', 'Refund requests are not connected.'],
+  customers: ['CUSTOMERS', 'Customer management is not connected.']
+};
+
+document.querySelectorAll('[data-tab]').forEach(button => {
+  button.addEventListener('click', () => {
+    document.querySelectorAll('[data-tab]').forEach(item => item.classList.remove('active'));
+    button.classList.add('active');
+    const [title, text] = sections[button.dataset.tab];
+    document.getElementById('sectionTitle').textContent = title;
+    document.getElementById('sectionText').textContent = text;
+  });
+});
+
+document.getElementById('logoutBtn').addEventListener('click', async () => {
+  const { error } = await supabase.auth.signOut();
+  if (error) {
+    message.textContent = 'Sign-out failed. Please try again.';
+    return;
+  }
+  message.textContent = 'Signed out.';
+  loginPanel.hidden = false;
+  consolePanel.hidden = true;
+});
+
+refreshSession();
+</script>
+</body>
+</html>
