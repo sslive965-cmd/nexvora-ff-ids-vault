@@ -89,28 +89,26 @@ const supabase = createClient(
 
 const message = document.getElementById('message');
 async function verifyAdmin() {
-  const { data: { user }, error: userError } = await supabase.auth.getUser();
+  const { data: { user }, error: userError } =
+    await supabase.auth.getUser();
 
   if (userError || !user) {
     window.location.replace('login.html');
     return false;
   }
 
-  const { data, error } = await supabase
-    .from('user_roles')
-    .select('role')
-    .eq('user_id', user.id)
-    .maybeSingle();
+  const { data, error } = await supabase.rpc('is_admin');
 
-  if (error || data?.role !== 'admin') {
+  if (error || data !== true) {
     document.getElementById('loginPanel').hidden = true;
     document.getElementById('consolePanel').hidden = true;
-    message.textContent = 'Access denied. Only an authorized administrator can access this panel.';
+    message.textContent =
+      'Access denied. Only an authorized administrator can access this panel.';
     return false;
   }
 
   return true;
-}  
+}
 const loginPanel = document.getElementById('loginPanel');
 const consolePanel = document.getElementById('consolePanel');
 async function refreshSession() {
