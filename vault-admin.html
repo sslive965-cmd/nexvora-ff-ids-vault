@@ -150,12 +150,30 @@ document.getElementById('adminLogin').addEventListener('submit', async (event) =
 });
 
 const sections = {
-  overview: ['OVERVIEW', 'Secure role verification is required before enabling administration.'],
-  listings: ['LISTINGS', 'Listing management is not connected. No listing changes can be made from this page yet.'],
-  orders: ['ORDERS', 'Order records are not connected.'],
-  payments: ['PAYMENTS', 'Payment review is not connected. Never mark a payment verified without checking it securely.'],
-  refunds: ['REFUNDS', 'Refund requests are not connected.'],
-  customers: ['CUSTOMERS', 'Customer management is not connected.']
+  overview: [
+    'OVERVIEW',
+    'Administrator verified. Use Listings to manage permitted catalog items.'
+  ],
+  listings: [
+    'LISTINGS',
+    'Loading listings...'
+  ],
+  orders: [
+    'ORDERS',
+    'Order records are not connected yet.'
+  ],
+  payments: [
+    'PAYMENTS',
+    'Payment review is not connected yet. Verify payments securely before approving.'
+  ],
+  refunds: [
+    'REFUNDS',
+    'Refund requests are not connected yet.'
+  ],
+  customers: [
+    'CUSTOMERS',
+    'Customer management is not connected yet.'
+  ]
 };
 
 document.querySelectorAll('[data-tab]').forEach(button => {
