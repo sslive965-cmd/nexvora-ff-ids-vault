@@ -148,7 +148,53 @@ document.getElementById('adminLogin').addEventListener('submit', async (event) =
   message.textContent = 'Signed in. Administrator permissions are not configured yet.';
   await refreshSession();
 });
+async function loadListings() {
+  const content = document.getElementById('sectionContent');
 
+  content.replaceChildren();
+
+  const heading = document.createElement('h2');
+  heading.textContent = 'LISTINGS MANAGEMENT';
+  content.appendChild(heading);
+
+  const status = document.createElement('p');
+  status.textContent = 'Loading listings...';
+  content.appendChild(status);
+
+  const { data, error } = await supabase
+    .from('vault_listings')
+    .select('id, title, description, category, price, image_url, status, created_at')
+    .order('created_at', { ascending: false });
+
+  if (error) {
+    status.textContent = 'Could not load listings: ' + error.message;
+    return;
+  }
+
+  status.textContent = data.length
+    ? `Found ${data.length} listing(s).`
+    : 'No listings yet.';
+
+  data.forEach(item => {
+    const card = document.createElement('div');
+    card.className = 'panel';
+
+    const title = document.createElement('h2');
+    title.textContent = item.title;
+    card.appendChild(title);
+
+    const details = document.createElement('p');
+    details.textContent =
+      `${item.category} · ₹${item.price} · ${item.status}`;
+    card.appendChild(details);
+
+    const description = document.createElement('p');
+    description.textContent = item.description || 'No description';
+    card.appendChild(description);
+
+    content.appendChild(card);
+  });
+  }
 const sections = {
   overview: [
     'OVERVIEW',
