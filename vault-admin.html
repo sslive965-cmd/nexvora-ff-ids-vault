@@ -229,6 +229,9 @@ document.querySelectorAll('[data-tab]').forEach(button => {
     const [title, text] = sections[button.dataset.tab];
     document.getElementById('sectionTitle').textContent = title;
     document.getElementById('sectionText').textContent = text;
+    if (button.dataset.tab === 'listings') {
+  loadListings();
+    }
   });
 });
 
