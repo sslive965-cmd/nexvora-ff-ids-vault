@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -7,143 +6,30 @@
 <meta name="theme-color" content="#050805">
 <title>NEXVORA | Vault</title>
 <style>
-:root{--bg:#050805;--panel:#0b120c;--green:#39ff78;--soft:#a0ffb7;--muted:#78a985}
-*{box-sizing:border-box}
-body{margin:0;background:radial-gradient(ellipse at top,#102a17,transparent 45%),var(--bg);color:var(--soft);font-family:Arial,sans-serif;min-height:100vh}
-header{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:19px 16px;border-bottom:1px solid #39ff782b;position:sticky;top:0;background:#050805ed;z-index:5}
-.brand{font-weight:900;letter-spacing:3px;font-size:19px;color:var(--green);text-shadow:0 0 15px #39ff7850}
-.iconbtn{border:1px solid #39ff7840;border-radius:5px;padding:10px 12px;background:#0b120c;color:var(--green);cursor:pointer}
-main{width:min(1100px,100%);margin:auto;padding:26px 16px 50px}
-.welcome{border:1px solid #39ff7835;border-radius:12px;padding:27px 20px;background:linear-gradient(130deg,#102518,#071009 70%);box-shadow:0 0 30px #39ff780d}
-.eyebrow{font-size:10px;letter-spacing:3px;color:var(--green)}
-h1{font-size:clamp(27px,6vw,43px);margin:14px 0 10px;color:var(--green)}
-p{color:var(--muted);font-size:13px;line-height:1.8}
-.username{color:var(--soft);overflow-wrap:anywhere}
-.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:17px 0 28px}
-.stat{padding:15px 9px;border:1px solid #39ff7827;border-radius:7px;background:#08100a;text-align:center}
-.stat strong{display:block;color:var(--green);font-size:12px;margin-bottom:6px}
-.stat span{color:var(--muted);font-size:10px}
-h2{font-size:18px;color:var(--green);letter-spacing:1px}
-.categories{display:flex;gap:9px;overflow-x:auto;padding:5px 0 15px}
-.category{flex-shrink:0;border:1px solid #39ff7840;background:#09130b;color:var(--muted);padding:12px 16px;border-radius:5px;font-size:10px;letter-spacing:1px;font-weight:bold;cursor:pointer}
-.category.active{background:var(--green);color:#031006;border-color:var(--green)}
-.empty{padding:30px 18px;border:1px dashed #39ff7835;border-radius:8px;text-align:center;background:#08100a}
-.empty strong{color:var(--green);font-size:14px}
-.empty p{margin-bottom:0}
-.actions{display:flex;flex-wrap:wrap;gap:10px;margin-top:20px}
-.actions a{color:var(--green);text-decoration:none;border:1px solid #39ff7840;padding:12px 15px;border-radius:5px;font-size:11px}
-#notice{color:var(--green);font-size:12px;line-height:1.7}
-footer{text-align:center;border-top:1px solid #39ff7820;padding:22px;color:#52795c;font-size:10px;letter-spacing:2px}
-[hidden]{display:none!important}
-@media(max-width:430px){.stats{grid-template-columns:1fr}.stat{display:flex;justify-content:space-between;align-items:center;padding:13px 15px}.stat strong{margin:0}}
+:root{--bg:#050805;--panel:#0b120c;--green:#39ff78;--soft:#a0ffb7;--muted:#78a985;--line:#39ff7835}
+*{box-sizing:border-box}body{margin:0;background:radial-gradient(ellipse at top,#102a17,transparent 45%),var(--bg);color:var(--soft);font-family:Arial,sans-serif;min-height:100vh}header{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:19px 16px;border-bottom:1px solid #39ff782b;position:sticky;top:0;background:#050805ed;z-index:5;flex-wrap:wrap}.brand{font-weight:900;letter-spacing:3px;font-size:19px;color:var(--green);text-shadow:0 0 15px #39ff7850}.iconbtn{border:1px solid #39ff7840;border-radius:5px;padding:10px 12px;background:#0b120c;color:var(--green);cursor:pointer}main{width:min(1100px,100%);margin:auto;padding:26px 16px 50px}.welcome{border:1px solid var(--line);border-radius:12px;padding:27px 20px;background:linear-gradient(130deg,#102518,#071009 70%);box-shadow:0 0 30px #39ff780d}.eyebrow{font-size:10px;letter-spacing:3px;color:var(--green)}h1{font-size:clamp(27px,6vw,43px);margin:14px 0 10px;color:var(--green)}p{color:var(--muted);font-size:13px;line-height:1.8}.username{color:var(--soft);overflow-wrap:anywhere}.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:17px 0 28px}.stat{padding:15px 9px;border:1px solid #39ff7827;border-radius:7px;background:#08100a;text-align:center}.stat strong{display:block;color:var(--green);font-size:12px;margin-bottom:6px}.stat span{color:var(--muted);font-size:10px}h2{font-size:18px;color:var(--green);letter-spacing:1px}.categories{display:flex;gap:9px;overflow-x:auto;padding:5px 0 15px}.category{flex-shrink:0;border:1px solid #39ff7840;background:#09130b;color:var(--muted);padding:12px 16px;border-radius:5px;font-size:10px;letter-spacing:1px;font-weight:bold;cursor:pointer}.category.active{background:var(--green);color:#031006;border-color:var(--green)}.empty{padding:30px 18px;border:1px dashed #39ff7835;border-radius:8px;text-align:center;background:#08100a}.empty strong{color:var(--green);font-size:14px}.empty p{margin-bottom:0}.actions{display:flex;flex-wrap:wrap;gap:10px;margin-top:20px}.actions a{color:var(--green);text-decoration:none;border:1px solid #39ff7840;padding:12px 15px;border-radius:5px;font-size:11px}#notice{color:var(--green);font-size:12px;line-height:1.7;min-height:18px}.listing-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(235px,1fr));gap:14px;margin-top:14px}.listing{overflow:hidden;border:1px solid #39ff7830;border-radius:9px;background:linear-gradient(160deg,#0c170e,#060a07);box-shadow:0 8px 24px #0005}.listing img{display:block;width:100%;height:190px;object-fit:cover;background:#08100a}.listing-body{padding:14px}.listing h3{color:var(--green);font-size:16px;margin:0 0 8px;overflow-wrap:anywhere}.listing p{margin:6px 0}.listing .price{font-size:18px;font-weight:bold;color:var(--soft);margin-top:12px}.tag{display:inline-block;border:1px solid #39ff7840;border-radius:4px;padding:5px 7px;margin:3px 4px 0 0;color:var(--muted);font-size:10px}.listing .description{white-space:pre-wrap;overflow-wrap:anywhere}.listing a.image-link{display:block}.empty[hidden],.listing-grid[hidden]{display:none!important}footer{text-align:center;border-top:1px solid #39ff7820;padding:22px;color:#52795c;font-size:10px;letter-spacing:2px}[hidden]{display:none!important}@media(max-width:600px){.stats{grid-template-columns:1fr}.stat{display:flex;justify-content:space-between;align-items:center;padding:13px 15px}.stat strong{margin:0}header{gap:8px}.brand{margin-right:auto}.iconbtn{padding:9px;font-size:11px}.listing-grid{grid-template-columns:1fr 1fr}.listing img{height:145px}}@media(max-width:360px){.listing-grid{grid-template-columns:1fr}}
 </style>
 </head>
 <body>
-<header>
-  <div class="brand">NEXVORA</div>
-  <button class="iconbtn" id="dashboardBtn" type="button">⌂ DASHBOARD</button>
-  <button class="iconbtn" id="logoutBtn" type="button">LOGOUT</button>
-</header>
-
+<header><div class="brand">NEXVORA</div><button class="iconbtn" id="dashboardBtn" type="button">⌂ DASHBOARD</button><button class="iconbtn" id="logoutBtn" type="button">LOGOUT</button></header>
 <main>
-  <section class="welcome">
-    <div class="eyebrow">◆ SECURE PLAYER COLLECTIONS</div>
-    <h1>WELCOME TO THE VAULT</h1>
-    <p>Signed in as <strong class="username" id="username">Loading...</strong></p>
-    <p>Explore collections, browse available listings and manage your account.</p>
-  </section>
-
-  <section class="stats">
-    <div class="stat"><strong>ALL COLLECTIONS</strong><span>Browse the vault</span></div>
-    <div class="stat"><strong>SECURE ACCESS</strong><span>Account protected</span></div>
-    <div class="stat"><strong>PLAYER SUPPORT</strong><span>Help and updates</span></div>
-  </section>
-
-  <section>
-    <h2>EXPLORE COLLECTIONS</h2>
-    <div class="categories" id="categories">
-      <button class="category active" data-category="ALL">ALL</button>
-      <button class="category" data-category="NORMAL">NORMAL</button>
-      <button class="category" data-category="PREMIUM">PREMIUM</button>
-      <button class="category" data-category="ULTRA PREMIUM">ULTRA PREMIUM</button>
-    </div>
-
-    <div class="empty">
-      <strong id="collectionTitle">VAULT COLLECTIONS</strong>
-      <p id="collectionText">Listings will appear here after the secure listings database and admin tools are connected.</p>
-    </div>
-    <p id="notice" role="status" aria-live="polite"></p>
-  </section>
-
-  <div class="actions">
-    <a href="dashboard.html">MY DASHBOARD ↗</a>
-    <a href="https://t.me/NEXVORA_X" target="_blank" rel="noopener noreferrer">TELEGRAM SUPPORT ↗</a>
-  </div>
-</main>
-
-<footer>NEXVORA FF IDs VAULT · GAME RESPONSIBLY</footer>
-
+<section class="welcome"><div class="eyebrow">◆ SECURE PLAYER COLLECTIONS</div><h1>WELCOME TO THE VAULT</h1><p>Signed in as <strong class="username" id="username">Loading...</strong></p><p>Explore collections, browse available listings and manage your account.</p></section>
+<section class="stats"><div class="stat"><strong id="totalCount">—</strong><span>ACTIVE LISTINGS</span></div><div class="stat"><strong>SECURE ACCESS</strong><span>Account protected</span></div><div class="stat"><strong>PLAYER SUPPORT</strong><span>Help and updates</span></div></section>
+<section><h2>EXPLORE COLLECTIONS</h2><div class="categories" id="categories"><button class="category active" data-category="ALL">ALL</button><button class="category" data-category="NORMAL">NORMAL</button><button class="category" data-category="PREMIUM">PREMIUM</button><button class="category" data-category="ULTRA PREMIUM">ULTRA PREMIUM</button></div><p id="notice" role="status" aria-live="polite">Loading active listings...</p><div class="listing-grid" id="listingGrid" hidden></div><div class="empty" id="emptyState" hidden><strong id="collectionTitle">NO LISTINGS YET</strong><p id="collectionText">Active listings will appear here when available.</p></div></section>
+<div class="actions"><a href="dashboard.html">MY DASHBOARD ↗</a><a href="https://t.me/NEXVORA_X" target="_blank" rel="noopener noreferrer">TELEGRAM SUPPORT ↗</a></div>
+</main><footer>NEXVORA FF IDs VAULT · GAME RESPONSIBLY</footer>
 <script type="module">
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
-
-const supabase = createClient(
-  'https://eggcveabpqldhcpzcmcr.supabase.co',
-  'sb_publishable_IVWNe_8YmgLmaXUHOymn1Q_t7Kso8Bd'
-);
-
-const usernameEl = document.getElementById('username');
-const notice = document.getElementById('notice');
-
-async function init() {
-  const { data: { session }, error } = await supabase.auth.getSession();
-
-  if (error || !session) {
-    window.location.replace('login.html');
-    return;
-  }
-
-  const user = session.user;
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('username')
-    .eq('id', user.id)
-    .maybeSingle();
-
-  usernameEl.textContent =
-    profile?.username || user.user_metadata?.username || user.email || 'Player';
-
-  document.getElementById('dashboardBtn').addEventListener('click', () => {
-    window.location.href = 'dashboard.html';
-  });
-
-  document.getElementById('logoutBtn').addEventListener('click', async () => {
-    const button = document.getElementById('logoutBtn');
-    button.disabled = true;
-    const { error } = await supabase.auth.signOut();
-    if (error) {
-      notice.textContent = 'Logout failed. Please try again.';
-      button.disabled = false;
-      return;
-    }
-    window.location.replace('index.html');
-  });
-}
-
-document.querySelectorAll('.category').forEach(button => {
-  button.addEventListener('click', () => {
-    document.querySelectorAll('.category').forEach(item => item.classList.remove('active'));
-    button.classList.add('active');
-
-    const category = button.dataset.category;
-    document.getElementById('collectionTitle').textContent =
-      category === 'ALL' ? 'VAULT COLLECTIONS' : category + ' COLLECTIONS';
-
-    document.getElementById('collectionText').textContent =
-      'The ' + category + ' collection is selected. Listings will show here after the listings database is connected.';
-  });
-});
-
-init();
+const supabase = createClient('https://eggcveabpqldhcpzcmcr.supabase.co','sb_publishable_IVWNe_8YmgLmaXUHOymn1Q_t7Kso8Bd');
+const $=id=>document.getElementById(id);const usernameEl=$('username'),notice=$('notice'),grid=$('listingGrid'),empty=$('emptyState');let allListings=[],activeCategory='ALL';
+function escapeHTML(value){return String(value??'').replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));}
+function money(value){const n=Number(value);return Number.isFinite(n)?new Intl.NumberFormat('en-IN',{style:'currency',currency:'INR',maximumFractionDigits:2}).format(n):'Price on request';}
+function categoryName(value){return String(value??'').trim().toUpperCase().replace(/[_-]+/g,' ').replace(/\s+/g,' ');}
+function imagesFor(row){let values=Array.isArray(row.image_urls)?row.image_urls.filter(Boolean):[];if(!values.length&&row.image_url)values=[row.image_url];return values;}
+function render(){const filtered=allListings.filter(item=>activeCategory==='ALL'||categoryName(item.category)===activeCategory);grid.innerHTML='';$('totalCount').textContent=String(allListings.length);if(!filtered.length){grid.hidden=true;empty.hidden=false;$('collectionTitle').textContent=activeCategory==='ALL'?'NO ACTIVE LISTINGS':`NO ${activeCategory} LISTINGS`;$('collectionText').textContent=allListings.length?'No active listings match this category yet.':'Active listings will appear here when the admin publishes them.';return;}empty.hidden=true;grid.hidden=false;for(const item of filtered){const images=imagesFor(item);const img=images[0];const title=item.title||'FF Vault Listing';const meta=[];if(item.level!=null)meta.push(`Level ${item.level}`);if(item.rank)meta.push(item.rank);if(item.account_age)meta.push(item.account_age);if(item.gun_skins!=null)meta.push(`${item.gun_skins} gun skins`);if(item.items!=null)meta.push(`${item.items} items`);if(item.vault_collection!=null)meta.push(`${item.vault_collection} vault items`);if(item.rating!=null)meta.push(`Rating ${item.rating}`);const card=document.createElement('article');card.className='listing';card.innerHTML=`${img?`<a class="image-link" href="${escapeHTML(img)}" target="_blank" rel="noopener noreferrer"><img src="${escapeHTML(img)}" alt="${escapeHTML(title)}" loading="lazy" referrerpolicy="no-referrer"></a>`:''}<div class="listing-body"><h3>${escapeHTML(title)}</h3><span class="tag">${escapeHTML(categoryName(item.category)||'VAULT')}</span>${meta.map(x=>`<span class="tag">${escapeHTML(x)}</span>`).join('')}<p class="description">${escapeHTML(item.description||'')}</p><div class="price">${item.price==null?'Price on request':money(item.price)}</div></div>`;grid.appendChild(card);}}
+async function loadListings(){notice.textContent='Loading active listings...';const {data,error}=await supabase.from('vault_listings').select('id,title,description,category,price,image_url,image_urls,status,level,account_age,rank,gun_skins,items,vault_collection,rating,created_at').eq('status','active').order('created_at',{ascending:false});if(error){console.error('Listings query failed:',error);notice.textContent='Listings could not load. Please refresh later.';allListings=[];render();return;}allListings=data||[];notice.textContent=allListings.length?`${allListings.length} active listing(s) loaded.`:'No active listings published yet.';render();}
+async function init(){const {data:{session},error}=await supabase.auth.getSession();if(error||!session){window.location.replace('login.html');return;}const user=session.user;const {data:profile}=await supabase.from('profiles').select('username').eq('id',user.id).maybeSingle();usernameEl.textContent=profile?.username||user.user_metadata?.username||user.email||'Player';$('dashboardBtn').addEventListener('click',()=>window.location.href='dashboard.html');$('logoutBtn').addEventListener('click',async()=>{const button=$('logoutBtn');button.disabled=true;const {error:logoutError}=await supabase.auth.signOut();if(logoutError){notice.textContent='Logout failed. Please try again.';button.disabled=false;return;}window.location.replace('index.html');});await loadListings();}
+document.querySelectorAll('.category').forEach(button=>button.addEventListener('click',()=>{document.querySelectorAll('.category').forEach(item=>item.classList.remove('active'));button.classList.add('active');activeCategory=button.dataset.category;render();}));init();
 </script>
 </body>
 </html>
