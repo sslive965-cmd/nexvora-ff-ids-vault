@@ -1,0 +1,212 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#050805">
+<title>NEXVORA | Dashboard</title>
+<style>
+:root{--bg:#050805;--panel:#0b120c;--green:#39ff78;--soft:#a0ffb7;--muted:#78a985}
+*{box-sizing:border-box}
+body{margin:0;background:radial-gradient(ellipse at top,#102a17,transparent 48%),var(--bg);color:var(--soft);font-family:Arial,sans-serif;min-height:100vh}
+header{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:18px 15px;border-bottom:1px solid #39ff782b;background:#050805ed}
+.brand{font-size:19px;font-weight:900;letter-spacing:3px;color:var(--green)}
+button,a{cursor:pointer}
+header a,.secondary{color:var(--green);text-decoration:none;background:#0b120c;border:1px solid #39ff7840;border-radius:5px;padding:10px 12px;font-size:11px}
+main{width:min(760px,100%);margin:auto;padding:24px 15px 45px}
+h1{font-size:30px;color:var(--green);margin:8px 0}
+h2{font-size:16px;color:var(--green);letter-spacing:1px}
+p{color:var(--muted);font-size:12px;line-height:1.8;overflow-wrap:anywhere}
+.panel{margin-top:17px;padding:20px 17px;border:1px solid #39ff7830;border-radius:9px;background:#08100a}
+.row{display:flex;justify-content:space-between;gap:12px;padding:12px 0;border-bottom:1px solid #39ff7818;font-size:12px}
+.row:last-child{border-bottom:0}
+.row span:first-child{color:var(--muted)}
+.row span:last-child{color:var(--soft);text-align:right;overflow-wrap:anywhere}
+label{display:block;margin:14px 0 7px;font-size:12px;color:var(--soft)}
+input,select,textarea{width:100%;padding:12px;border:1px solid #39ff7835;border-radius:5px;background:#030704;color:var(--soft);font:inherit;outline:none}
+textarea{min-height:85px;resize:vertical}
+input:focus,select:focus,textarea:focus{border-color:var(--green)}
+.primary{width:100%;margin-top:15px;padding:13px;border:0;border-radius:5px;background:var(--green);color:#031006;font-weight:900}
+.actions{display:flex;flex-wrap:wrap;gap:9px;margin-top:18px}
+#message{font-size:12px;line-height:1.8;color:var(--green);overflow-wrap:anywhere}
+#orders{color:var(--muted);font-size:12px;line-height:1.8}
+[hidden]{display:none!important}
+</style>
+</head>
+<body>
+<header>
+  <div class="brand">NEXVORA</div>
+  <a href="vault.html">← VAULT</a>
+</header>
+
+<main>
+  <p>PLAYER ACCOUNT / CONTROL CENTER</p>
+  <h1>MY DASHBOARD</h1>
+  <p>Manage your profile and check your order information.</p>
+
+  <section class="panel">
+    <h2>ACCOUNT DETAILS</h2>
+    <div class="row"><span>USERNAME</span><span id="currentUsername">Loading...</span></div>
+    <div class="row"><span>EMAIL</span><span id="currentEmail">Loading...</span></div>
+    <div class="actions">
+      <a class="secondary" href="#profileForm">EDIT USERNAME</a>
+      <a class="secondary" href="#passwordForm">CHANGE PASSWORD</a>
+    </div>
+  </section>
+
+  <section class="panel" id="profileForm">
+    <h2>UPDATE USERNAME</h2>
+    <form id="usernameForm">
+      <label for="newUsername">NEW USERNAME</label>
+      <input id="newUsername" minlength="3" maxlength="24" required placeholder="Enter new username">
+      <button class="primary" type="submit">SAVE USERNAME</button>
+    </form>
+  </section>
+
+  <section class="panel" id="passwordForm">
+    <h2>SECURITY SETTINGS</h2>
+    <p>For your safety, existing passwords are never displayed. You can set a new password here.</p>
+    <form id="changePasswordForm">
+      <label for="newPassword">NEW PASSWORD</label>
+      <input id="newPassword" type="password" minlength="8" autocomplete="new-password" required placeholder="At least 8 characters">
+      <label for="confirmPassword">CONFIRM NEW PASSWORD</label>
+      <input id="confirmPassword" type="password" minlength="8" autocomplete="new-password" required placeholder="Enter it again">
+      <button class="primary" type="submit">UPDATE PASSWORD</button>
+    </form>
+  </section>
+
+  <section class="panel">
+    <h2>MY ORDERS</h2>
+    <div id="orders">Orders database integration is pending.</div>
+  </section>
+
+  <section class="panel">
+    <h2>REFUND REQUEST</h2>
+    <p>Submit a request for an eligible order. The request will only be sent after the refund system is connected.</p>
+    <form id="refundForm">
+      <label for="orderId">ORDER REFERENCE</label>
+      <input id="orderId" required placeholder="Enter your order reference">
+      <label for="upiId">YOUR UPI ID</label>
+      <input id="upiId" required maxlength="100" placeholder="name@bank">
+      <label for="reason">REASON</label>
+      <textarea id="reason" required maxlength="500" placeholder="Explain your request"></textarea>
+      <button class="primary" type="submit">SUBMIT REFUND REQUEST</button>
+    </form>
+  </section>
+
+  <div id="message" role="status" aria-live="polite"></div>
+  <div class="actions">
+    <a class="secondary" href="https://t.me/NEXVORA_X" target="_blank" rel="noopener noreferrer">TELEGRAM SUPPORT ↗</a>
+    <button class="secondary" id="logoutBtn" type="button">LOG OUT</button>
+  </div>
+</main>
+
+<script type="module">
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+
+const supabase = createClient(
+  'https://eggcveabpqldhcpzcmcr.supabase.co',
+  'sb_publishable_IVWNe_8YmgLmaXUHOymn1Q_t7Kso8Bd'
+);
+
+const message = document.getElementById('message');
+let currentUser = null;
+
+async function init() {
+  const { data, error } = await supabase.auth.getSession();
+  if (error || !data.session) {
+    window.location.replace('login.html');
+    return;
+  }
+
+  currentUser = data.session.user;
+  document.getElementById('currentEmail').textContent = currentUser.email || 'Not available';
+
+  const { data: profile, error: profileError } = await supabase
+    .from('profiles')
+    .select('username')
+    .eq('id', currentUser.id)
+    .maybeSingle();
+
+  if (profileError) {
+    message.textContent = 'Could not load profile. Please refresh and try again.';
+    document.getElementById('currentUsername').textContent = 'Unavailable';
+    return;
+  }
+
+  const username = profile?.username || currentUser.user_metadata?.username || 'Player';
+  document.getElementById('currentUsername').textContent = username;
+  document.getElementById('newUsername').value = username;
+}
+
+document.getElementById('usernameForm').addEventListener('submit', async (event) => {
+  event.preventDefault();
+  if (!currentUser) return;
+
+  const username = document.getElementById('newUsername').value.trim();
+  if (username.length < 3) {
+    message.textContent = 'Username must contain at least 3 characters.';
+    return;
+  }
+
+  message.textContent = 'Saving username...';
+  const { error } = await supabase
+    .from('profiles')
+    .update({ username })
+    .eq('id', currentUser.id);
+
+  if (error) {
+    message.textContent = error.code === '23505'
+      ? 'That username is already taken. Please choose another.'
+      : 'Username could not be saved. Please try again.';
+    return;
+  }
+
+  await supabase.auth.updateUser({ data: { username } });
+  document.getElementById('currentUsername').textContent = username;
+  message.textContent = 'Username updated successfully.';
+});
+
+document.getElementById('changePasswordForm').addEventListener('submit', async (event) => {
+  event.preventDefault();
+  const password = document.getElementById('newPassword').value;
+  const confirm = document.getElementById('confirmPassword').value;
+
+  if (password.length < 8) {
+    message.textContent = 'Password must contain at least 8 characters.';
+    return;
+  }
+  if (password !== confirm) {
+    message.textContent = 'Passwords do not match.';
+    return;
+  }
+
+  const { error } = await supabase.auth.updateUser({ password });
+  if (error) {
+    message.textContent = 'Password update failed. Please try again.';
+    return;
+  }
+
+  document.getElementById('changePasswordForm').reset();
+  message.textContent = 'Password updated successfully.';
+});
+
+document.getElementById('refundForm').addEventListener('submit', (event) => {
+  event.preventDefault();
+  message.textContent = 'Refund requests are not connected yet. Do not submit payment details here until the secure refund database is configured.';
+});
+
+document.getElementById('logoutBtn').addEventListener('click', async () => {
+  const { error } = await supabase.auth.signOut();
+  if (error) {
+    message.textContent = 'Logout failed. Please try again.';
+    return;
+  }
+  window.location.replace('index.html');
+});
+
+init();
+</script>
+</body>
+</html>
