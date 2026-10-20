@@ -521,45 +521,221 @@ async function loadPayments(){
  content.appendChild(makeTable(['PAYMENT ID','ORDER','AMOUNT','STATUS','PAYMENT DETAILS','SCREENSHOT','REVIEW'],rows));
 }
 
+async function loadRefunds() {
+  const content = document.getElementById('sectionContent');
+  content.replaceChildren();
+
+  if (!(await verifyAdmin())) return;
+
+  const heading = document.createElement('h2');
+  heading.textContent = 'REFUND REQUESTS';
+  content.appendChild(heading);
+
+  const result = await supabase
+    .from('refund_requests')
+    .select('id, order_id, user_id, amount, reason, status, admin_note, created_at')
+    .order('created_at', { ascending: false });
+
+  if (result.error) {
+    const error = document.createElement('p');
+    error.textContent = 'Refunds load nahi hue: ' + result.error.message;
+    content.appendChild(error);
+    return;
+  }
+
+  if (!result.data || result.data.length === 0) {
+    const empty = document.createElement('p');
+    empty.textContent = 'Abhi koi refund request nahi hai.';
+    content.appendChild(empty);
+    return;
+  }
+
+  result.data.forEach(refund => {
+    const card = document.createElement('div');
+    card.style.cssText =
+      'padding:16px;margin:12px 0;border:1px solid #333;border-radius:10px';
+
+    const details = document.createElement('p');
+    details.textContent =
+      `Refund #${refund.id} | Order #${refund.order_id} | Amount: ₹${refund.amount} | Status: ${refund.status} | Reason: ${refund.reason || 'Not provided'}`;
+
+    const status = document.createElement('select');
+    ['pending', 'approved', 'rejected', 'completed'].forEach(value => {
+      const option = document.createElement('option');
+      option.value = value;
+      option.textContent = value.toUpperCase();
+      option.selected = value === refund.status;
+      status.appendChild(option);
+    });
+
+    const note = document.createElement('textarea');
+    note.placeholder = 'Admin note';
+    note.value = refund.admin_note || '';
+
+    const save = document.createElement('button');
+    save.textContent = 'Save Review';
+
+    save.addEventListener('click', async () => {
+      if (!(await verifyAdmin())) return;
+
+      save.disabled = true;
+      const update = await supabase
+        .from('refund_requests')
+        .update({
+          status: status.value,
+          admin_note: note.value.trim() || null,
+          reviewed_at: new Date().toISOString()
+        })
+        .eq('id', refund.id);
+
+      save.disabled = false;
+      save.textContent = update.error
+        ? 'Save Failed'
+        : 'Saved Successfully';
+    });
+
+    card.append(details, status, note, save);
+    content.appendChild(card);
+  });
+}
+
+async function loadCustomers() {
+  const content = document.getElementById('sectionContent');
+  content.replaceChildren();
+
+  if (!(await verifyAdmin())) return;
+
+  const heading = document.createElement('h2');
+  heading.textContent = 'CUSTOMERS';
+  content.appendChild(heading);
+
+  const [profilesResult, rolesResult] = await Promise.all([
+    supabase
+      .from('profiles')
+      .select('id, username, email, created_at')
+      .order('created_at', { ascending: false }),
+    supabase
+      .from('user_roles')
+      .select('user_id, role')
+  ]);
+
+  if (profilesResult.error || rolesResult.error) {
+    const error = document.createElement('p');
+    error.textContent =
+      'Customers load nahi hue: ' +
+      (profilesResult.error?.message || rolesResult.error?.message);
+    content.appendChild(error);
+    return;
+  }
+
+  const roles = new Map(
+    (rolesResult.data || []).map(item => [item.user_id, item.role])
+  );
+
+  if (!profilesResult.data || profilesResult.data.length === 0) {
+    const empty = document.createElement('p');
+    empty.textContent = 'Koi customer record nahi mila.';
+    content.appendChild(empty);
+    return;
+  }
+
+  const table = document.createElement('table');
+  table.style.cssText = 'width:100%;border-collapse:collapse';
+
+  const header = document.createElement('tr');
+  ['Username', 'Email', 'Role', 'Joined'].forEach(label => {
+    const th = document.createElement('th');
+    th.textContent = label;
+    th.style.cssText = 'padding:10px;border-bottom:1px solid #444;text-align:left';
+    header.appendChild(th);
+  });
+  table.appendChild(header);
+
+  profilesResult.data.forEach(profile => {
+    const row = document.createElement('tr');
+    [
+      profile.username || '—',
+      profile.email || '—',
+      roles.get(profile.id) || 'customer',
+      profile.created_at
+        ? new Date(profile.created_at).toLocaleDateString()
+        : '—'
+    ].forEach(value => {
+      const cell = document.createElement('td');
+      cell.textContent = value;
+      cell.style.cssText = 'padding:10px;border-bottom:1px solid #333';
+      row.appendChild(cell);
+    });
+    table.appendChild(row);
+  });
+
+  content.appendChild(table);
+      }
+
 const sections = {
   overview: [
     'OVERVIEW',
-    'Administrator verified. Use Listings to manage permitted catalog items.'
+    'Administrator dashboard'
   ],
   listings: [
     'LISTINGS',
-    'Loading listings...'
+    'Manage vault listings'
   ],
   orders: [
     'ORDERS',
-    'Order records are not connected yet.'
+    'View customer orders'
   ],
   payments: [
     'PAYMENTS',
-    'Payment review is not connected yet. Verify payments securely before approving.'
+    'Review payment submissions'
   ],
   refunds: [
     'REFUNDS',
-    'Refund requests are not connected yet.'
+    'Review and manage refund requests'
   ],
   customers: [
     'CUSTOMERS',
-    'Customer management is not connected yet.'
+    'View registered customers'
   ]
 };
-
 document.querySelectorAll('[data-tab]').forEach(button => {
-  button.addEventListener('click', () => {
-    document.querySelectorAll('[data-tab]').forEach(item => item.classList.remove('active'));
+  button.addEventListener('click', async () => {
+    document.querySelectorAll('[data-tab]').forEach(item => {
+      item.classList.remove('active');
+    });
+
     button.classList.add('active');
-    const [title, text] = sections[button.dataset.tab];
-    document.getElementById('sectionTitle').textContent = title;
-    document.getElementById('sectionText').textContent = text;
-    if (button.dataset.tab === 'listings') loadListings();
-    else if (button.dataset.tab === 'orders') loadOrders();
-    else if (button.dataset.tab === 'payments') loadPayments();
+
+    const tab = button.dataset.tab;
+
+    if (!(await verifyAdmin())) return;
+
+    if (tab === 'overview') {
+      const content = document.getElementById('sectionContent');
+      content.replaceChildren();
+
+      const heading = document.createElement('h2');
+      heading.textContent = 'OVERVIEW';
+
+      const text = document.createElement('p');
+      text.textContent =
+        'Administrator verified. Use the tabs to manage listings, orders, payments, refunds and customers.';
+
+      content.append(heading, text);
+    } else if (tab === 'listings') {
+      await loadListings();
+    } else if (tab === 'orders') {
+      await loadOrders();
+    } else if (tab === 'payments') {
+      await loadPayments();
+    } else if (tab === 'refunds') {
+      await loadRefunds();
+    } else if (tab === 'customers') {
+      await loadCustomers();
+    }
   });
 });
+  
 
 document.getElementById('logoutBtn').addEventListener('click', async () => {
   const { error } = await supabase.auth.signOut();
