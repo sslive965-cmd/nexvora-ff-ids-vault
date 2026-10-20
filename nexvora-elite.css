@@ -88,4 +88,15 @@ footer { color: var(--nx-muted); }
   .listing, .listing-card, .order-card, .feature, .panel { animation: nx-rise .35s ease both; }
   @keyframes nx-rise { from { opacity: .82; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
                                                  }
-                                                          
+
+/* Extra finishing touches */
+img { max-width: 100%; }
+button, a, input, select, textarea { -webkit-tap-highlight-color: transparent; }
+button:disabled { cursor: not-allowed; opacity: .58; transform: none !important; }
+.listing:hover, .listing-card:hover, .order-card:hover, .feature:hover {
+  border-color: rgba(57,255,120,.42);
+  box-shadow: 0 16px 42px rgba(0,0,0,.38), 0 0 22px rgba(57,255,120,.07);
+}
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
+}
