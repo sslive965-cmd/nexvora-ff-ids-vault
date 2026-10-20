@@ -31,7 +31,23 @@ input:focus,select:focus,textarea:focus{border-color:var(--green)}
 .actions{display:flex;flex-wrap:wrap;gap:9px;margin-top:18px}
 #message{font-size:12px;line-height:1.8;color:var(--green);overflow-wrap:anywhere}
 #orders{color:var(--muted);font-size:12px;line-height:1.8}
+.order-card{border:1px solid #39ff7830;border-radius:7px;padding:15px;margin-top:13px;background:#050a06}
+.order-head{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
+.order-title{font-size:14px;color:var(--soft);font-weight:bold;overflow-wrap:anywhere}
+.order-id{font-size:11px;color:var(--muted);margin-top:7px;overflow-wrap:anywhere}
+.order-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-top:14px}
+.order-stat{padding:10px;border:1px solid #39ff7818;border-radius:5px;min-width:0}
+.order-stat small{display:block;color:var(--muted);font-size:10px;margin-bottom:6px}
+.order-stat strong{font-size:12px;overflow-wrap:anywhere}
+.status{display:inline-block;padding:6px 9px;border:1px solid #39ff7850;border-radius:20px;color:var(--green);font-size:10px;font-weight:bold;text-transform:uppercase}
+.status.rejected,.status.cancelled{color:#ff9292;border-color:#ff929255}
+.status.pending{color:#ffd980;border-color:#ffd98055}
+.status.completed,.status.paid{color:var(--green)}
+.order-date{font-size:10px;color:var(--muted);margin-top:12px}
+.refresh{width:auto;margin-top:12px;padding:10px 13px}
+.empty{padding:18px 0;color:var(--muted)}
 [hidden]{display:none!important}
+@media(max-width:380px){.order-grid{grid-template-columns:1fr}.order-head{align-items:flex-start}}
 </style>
 </head>
 <body>
@@ -76,14 +92,16 @@ input:focus,select:focus,textarea:focus{border-color:var(--green)}
     </form>
   </section>
 
-  <section class="panel">
+  <section class="panel" id="myOrders">
     <h2>MY ORDERS</h2>
-    <div id="orders">Orders database integration is pending.</div>
+    <p>Your orders and their latest recorded status.</p>
+    <div id="orders" aria-live="polite">Loading your orders...</div>
+    <button class="secondary refresh" id="refreshOrdersBtn" type="button">↻ REFRESH ORDERS</button>
   </section>
 
   <section class="panel">
     <h2>REFUND REQUEST</h2>
-    <p>Submit a request for an eligible order. The request will only be sent after the refund system is connected.</p>
+    <p>Submit a request for an eligible order. The refund request form is not connected to the database yet.</p>
     <form id="refundForm">
       <label for="orderId">ORDER REFERENCE</label>
       <input id="orderId" required placeholder="Enter your order reference">
@@ -111,17 +129,117 @@ const supabase = createClient(
 );
 
 const message = document.getElementById('message');
+const ordersContainer = document.getElementById('orders');
 let currentUser = null;
+
+function escapeHTML(value) {
+  return String(value ?? '').replace(/[&<>"']/g, char => ({
+    '&':'&amp;',
+    '<':'&lt;',
+    '>':'&gt;',
+    '"':'&quot;',
+    "'":'&#39;'
+  })[char]);
+}
+
+function formatDate(value) {
+  if (!value) return 'Not available';
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return 'Not available';
+  return date.toLocaleString(undefined, {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit'
+  });
+}
+
+function statusClass(status) {
+  const normalized = String(status || '').toLowerCase();
+  if (['pending','paid','rejected','cancelled','completed'].includes(normalized)) {
+    return normalized;
+  }
+  return '';
+}
+
+async function loadOrders() {
+  if (!currentUser) {
+    ordersContainer.textContent = 'Please log in to view your orders.';
+    return;
+  }
+
+  ordersContainer.textContent = 'Loading your orders...';
+  document.getElementById('refreshOrdersBtn').disabled = true;
+
+  try {
+    const { data, error } = await supabase
+      .from('orders')
+      .select('id, listing_title, amount, status, created_at')
+      .eq('user_id', currentUser.id)
+      .order('created_at', { ascending: false });
+
+    if (error) throw error;
+
+    if (!data || data.length === 0) {
+      ordersContainer.innerHTML =
+        '<div class="empty">No orders found yet. Your orders will appear here after an order is created.</div>';
+      return;
+    }
+
+    ordersContainer.innerHTML = data.map(order => {
+      const id = escapeHTML(order.id);
+      const title = escapeHTML(order.listing_title || 'Vault item');
+      const amount = Number(order.amount);
+      const price = Number.isFinite(amount)
+        ? '₹' + amount.toLocaleString('en-IN', { maximumFractionDigits: 2 })
+        : 'Not available';
+      const status = String(order.status || 'unknown');
+      const statusText = escapeHTML(status.replace(/_/g, ' '));
+      const cssStatus = statusClass(status);
+      const date = escapeHTML(formatDate(order.created_at));
+
+      return `
+        <article class="order-card">
+          <div class="order-head">
+            <div class="order-title">${title}</div>
+            <span class="status ${cssStatus}">${statusText}</span>
+          </div>
+          <div class="order-id">ORDER ID: #${id}</div>
+          <div class="order-grid">
+            <div class="order-stat">
+              <small>ORDER AMOUNT</small>
+              <strong>${escapeHTML(price)}</strong>
+            </div>
+            <div class="order-stat">
+              <small>ORDER STATUS</small>
+              <strong>${statusText}</strong>
+            </div>
+          </div>
+          <div class="order-date">ORDER DATE: ${date}</div>
+        </article>
+      `;
+    }).join('');
+  } catch (error) {
+    console.error('Order loading failed:', error);
+    ordersContainer.textContent =
+      'Orders could not be loaded. Please refresh and try again.';
+  } finally {
+    document.getElementById('refreshOrdersBtn').disabled = false;
+  }
+}
 
 async function init() {
   const { data, error } = await supabase.auth.getSession();
+
   if (error || !data.session) {
     window.location.replace('login.html');
     return;
   }
 
   currentUser = data.session.user;
-  document.getElementById('currentEmail').textContent = currentUser.email || 'Not available';
+  document.getElementById('currentEmail').textContent =
+    currentUser.email || 'Not available';
 
   const { data: profile, error: profileError } = await supabase
     .from('profiles')
@@ -130,17 +248,22 @@ async function init() {
     .maybeSingle();
 
   if (profileError) {
-    message.textContent = 'Could not load profile. Please refresh and try again.';
     document.getElementById('currentUsername').textContent = 'Unavailable';
-    return;
+    message.textContent = 'Profile could not be loaded. You can still check your orders.';
+  } else {
+    const username = profile?.username ||
+      currentUser.user_metadata?.username || 'Player';
+
+    document.getElementById('currentUsername').textContent = username;
+    document.getElementById('newUsername').value = username;
   }
 
-  const username = profile?.username || currentUser.user_metadata?.username || 'Player';
-  document.getElementById('currentUsername').textContent = username;
-  document.getElementById('newUsername').value = username;
+  await loadOrders();
 }
 
-document.getElementById('usernameForm').addEventListener('submit', async (event) => {
+document.getElementById('refreshOrdersBtn').addEventListener('click', loadOrders);
+
+document.getElementById('usernameForm').addEventListener('submit', async event => {
   event.preventDefault();
   if (!currentUser) return;
 
@@ -151,6 +274,7 @@ document.getElementById('usernameForm').addEventListener('submit', async (event)
   }
 
   message.textContent = 'Saving username...';
+
   const { error } = await supabase
     .from('profiles')
     .update({ username })
@@ -163,13 +287,19 @@ document.getElementById('usernameForm').addEventListener('submit', async (event)
     return;
   }
 
-  await supabase.auth.updateUser({ data: { username } });
+  const { error: authError } = await supabase.auth.updateUser({
+    data: { username }
+  });
+
   document.getElementById('currentUsername').textContent = username;
-  message.textContent = 'Username updated successfully.';
+  message.textContent = authError
+    ? 'Username saved to profile. Account display may update after signing in again.'
+    : 'Username updated successfully.';
 });
 
-document.getElementById('changePasswordForm').addEventListener('submit', async (event) => {
+document.getElementById('changePasswordForm').addEventListener('submit', async event => {
   event.preventDefault();
+
   const password = document.getElementById('newPassword').value;
   const confirm = document.getElementById('confirmPassword').value;
 
@@ -183,6 +313,7 @@ document.getElementById('changePasswordForm').addEventListener('submit', async (
   }
 
   const { error } = await supabase.auth.updateUser({ password });
+
   if (error) {
     message.textContent = 'Password update failed. Please try again.';
     return;
@@ -192,17 +323,20 @@ document.getElementById('changePasswordForm').addEventListener('submit', async (
   message.textContent = 'Password updated successfully.';
 });
 
-document.getElementById('refundForm').addEventListener('submit', (event) => {
+document.getElementById('refundForm').addEventListener('submit', event => {
   event.preventDefault();
-  message.textContent = 'Refund requests are not connected yet. Do not submit payment details here until the secure refund database is configured.';
+  message.textContent =
+    'Refund requests are not connected yet. Your request was not submitted.';
 });
 
 document.getElementById('logoutBtn').addEventListener('click', async () => {
   const { error } = await supabase.auth.signOut();
+
   if (error) {
     message.textContent = 'Logout failed. Please try again.';
     return;
   }
+
   window.location.replace('index.html');
 });
 
