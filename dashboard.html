@@ -131,16 +131,21 @@ input:focus,select:focus,textarea:focus{border-color:var(--green)}
   </section>
 
   <section class="panel" id="refundPanel" hidden>
-    <h2>REFUND REQUEST</h2>
-    <p>Submit a refund request for a paid or completed order. Admin will review the request and update its status.</p>
-    <form id="refundForm">
-      <label for="orderId">ORDER REFERENCE</label>
-      <select id="orderId" required><option value="">Loading eligible orders…</option></select>
-      <label for="upiId">YOUR UPI ID</label>
+    <h2>VERIFY ORDER UTR</h2>
+    <p>Enter the UTR used for your payment. We will match it only against payment records belonging to your signed-in account. Never share your password or OTP.</p>
+    <form id="utrVerifyForm">
+      <label for="refundUtr">PAYMENT UTR / TRANSACTION REFERENCE</label>
+      <input id="refundUtr" required maxlength="120" autocomplete="off" placeholder="Enter the exact UTR used for this order">
+      <button class="primary" id="verifyUtrBtn" type="submit">VERIFY UTR</button>
+    </form>
+    <article class="order-card" id="verifiedOrderCard" hidden aria-live="polite"></article>
+    <form id="refundForm" hidden>
+      <p>Check the order details above, then submit your request. Refund requests are reviewed by the admin; approval does not mean money has already been transferred.</p>
+      <label for="upiId">REFUND UPI ID</label>
       <input id="upiId" required maxlength="100" placeholder="name@bank">
-      <label for="reason">REASON</label>
+      <label for="reason">REASON FOR REFUND</label>
       <textarea id="reason" required maxlength="500" placeholder="Explain your request"></textarea>
-      <button class="primary" type="submit">SUBMIT REFUND REQUEST</button>
+      <button class="primary" id="submitRefundBtn" type="submit">REQUEST REFUND</button>
     </form>
   </section>
 
@@ -320,11 +325,14 @@ async function loadPolicyPanel() {
   title.textContent = 'WEBSITE POLICY'; body.textContent = 'Loading current policy…'; events.textContent = 'Loading policy notices…';
   const { data, error } = await supabase.from('site_policies').select('title,body,updated_at').eq('id',1).maybeSingle();
   body.replaceChildren();
+  const defaultPolicy = `NEXVORA WEBSITE, PAYMENT & REFUND POLICY\n\n1. Accurate information: Customers must provide correct account, order and payment details. Never share passwords or OTPs with anyone.\n\n2. Payments: Pay only the amount shown for the selected listing using the payment instructions displayed on the official website. Keep the UTR/transaction reference for your records. A submitted UTR is not proof of payment until the payment is matched and approved by the admin.\n\n3. Order verification: Refund requests can be submitted only for an order linked to the signed-in customer and an approved payment record. The website checks the UTR against the customer's own payment record.\n\n4. Refund review: A request is reviewed by the admin. Approval of a request does not mean the refund has already been transferred. The admin should update the status only when the relevant review or transfer step has actually occurred. If more information is needed, contact official support.\n\n5. No refund-unlock fee: NEXVORA does not require an extra upfront processing fee to unlock, release or guarantee a refund. Do not pay anyone claiming that an additional payment is required to release your existing refund.\n\n6. Eligibility and exclusions: Requests may be declined where the order is not eligible, payment cannot be verified, details conflict, or the same order already has an active refund request. Digital goods already delivered or transferred may need individual review.\n\n7. Timelines: Review and bank/UPI processing times can vary. No fixed refund time is guaranteed unless confirmed by official support in writing.\n\n8. Support and fraud prevention: Use only the support link shown on the official website. Keep payment records and never send passwords, OTPs or full banking credentials.\n\n9. Policy updates: The latest policy published in the admin panel applies to future requests. Contact official support if anything is unclear.`;
   if (error || !data) {
-    body.textContent = 'The current policy could not be loaded. Please contact support before proceeding.';
+    title.textContent = 'NEXVORA WEBSITE & REFUND POLICY';
+    const para = document.createElement('p'); para.style.whiteSpace = 'pre-wrap'; para.textContent = defaultPolicy; body.appendChild(para);
+    if (error) { const note=document.createElement('p'); note.textContent='Showing the built-in policy because the saved policy could not be loaded.'; body.appendChild(note); }
   } else {
     title.textContent = data.title || 'WEBSITE POLICY';
-    const para = document.createElement('p'); para.style.whiteSpace = 'pre-wrap'; para.textContent = data.body || 'No policy text has been published yet.'; body.appendChild(para);
+    const para = document.createElement('p'); para.style.whiteSpace = 'pre-wrap'; para.textContent = data.body || defaultPolicy; body.appendChild(para);
     if (data.updated_at) { const date = document.createElement('p'); date.textContent = 'Last updated: ' + formatDate(data.updated_at); body.appendChild(date); }
   }
   const { data: history, error: historyError } = await supabase.from('customer_policy_events').select('event_type,rule_title,message,created_at').eq('user_id',currentUser.id).order('created_at',{ascending:false}).limit(30);
@@ -408,7 +416,6 @@ document.getElementById('orders').addEventListener('click', async event => {
     if (deleteError) throw deleteError;
     message.textContent = `Order #${orderId} deleted.`;
     await loadOrders();
-    await loadRefundOptions();
   } catch (err) {
     message.textContent = 'Order not deleted: ' + (err.message || 'Please try again.');
     button.disabled = false;
@@ -425,7 +432,7 @@ document.querySelectorAll('[data-open-panel]').forEach(button => button.addEvent
   if (target === 'refundPanel') {
     document.getElementById('refundPanel').hidden = false;
     document.getElementById('refundHistoryPanel').hidden = false;
-    await loadRefundOptions(); await loadRefundHistory();
+    resetRefundVerification(); await loadRefundHistory();
   } else {
     document.getElementById(target).hidden = false;
     if (target === 'myOrders') await loadOrders();
@@ -503,30 +510,72 @@ document.getElementById('changePasswordForm').addEventListener('submit', async e
   message.textContent = 'Password updated successfully.';
 });
 
-async function loadRefundOptions() {
-  const select = document.getElementById('orderId');
-  const { data, error } = await supabase
-    .from('orders')
-    .select('id, listing_title, amount, status')
+let verifiedRefundOrder = null;
+let verifiedRefundPayment = null;
+
+function resetRefundVerification() {
+  verifiedRefundOrder = null;
+  verifiedRefundPayment = null;
+  document.getElementById('verifiedOrderCard').hidden = true;
+  document.getElementById('verifiedOrderCard').replaceChildren();
+  document.getElementById('refundForm').hidden = true;
+}
+
+async function verifyRefundUtr(utr) {
+  // First match an approved payment record using the exact UTR, scoped to this customer.
+  const { data: payment, error: paymentError } = await supabase
+    .from('payment_submissions')
+    .select('id,order_id,transaction_reference,amount,status,created_at')
     .eq('user_id', currentUser.id)
-    .in('status', ['paid', 'completed'])
-    .order('created_at', { ascending: false });
-  select.replaceChildren();
-  const placeholder = document.createElement('option');
-  placeholder.value = '';
-  placeholder.textContent = error ? 'Could not load eligible orders' : 'Select a paid/completed order';
-  select.appendChild(placeholder);
-  if (error) {
-    message.textContent = 'Eligible orders could not be loaded: ' + error.message;
-    return;
-  }
-  (data || []).forEach(order => {
-    const option = document.createElement('option');
-    option.value = String(order.id);
-    option.textContent = `#${order.id} — ${order.listing_title || 'Vault item'} — ₹${Number(order.amount || 0).toFixed(2)} (${order.status})`;
-    select.appendChild(option);
+    .eq('transaction_reference', utr)
+    .eq('status', 'approved')
+    .order('created_at', { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  if (paymentError) throw paymentError;
+  if (!payment) throw new Error('UTR match nahi hua ya payment abhi admin se approve nahi hua. UTR check karein ya support se contact karein.');
+
+  const { data: order, error: orderError } = await supabase
+    .from('orders')
+    .select('id,user_id,listing_id,listing_title,amount,status,created_at')
+    .eq('id', payment.order_id)
+    .eq('user_id', currentUser.id)
+    .maybeSingle();
+  if (orderError) throw orderError;
+  if (!order) throw new Error('Is UTR se linked order aapke account mein nahi mila.');
+  if (!['paid','completed'].includes(String(order.status || '').toLowerCase()))
+    throw new Error('Order refund request ke liye eligible nahi hai. Current order status: ' + (order.status || 'unknown'));
+
+  const { data: existingRefunds, error: existingError } = await supabase
+    .from('refund_requests').select('id,status').eq('order_id', order.id).eq('user_id', currentUser.id)
+    .in('status', ['pending','approved','completed']).limit(1);
+  if (existingError) throw existingError;
+  if (existingRefunds?.length) throw new Error('Is order ke liye refund request pehle se maujood hai. My Refunds mein status dekhein.');
+
+  verifiedRefundOrder = order;
+  verifiedRefundPayment = payment;
+  const card = document.getElementById('verifiedOrderCard');
+  card.replaceChildren();
+  const title = document.createElement('div'); title.className = 'order-title';
+  title.textContent = 'VERIFIED ORDER #' + order.id;
+  const grid = document.createElement('div'); grid.className = 'order-grid';
+  const rows = [
+    ['PRODUCT', order.listing_title || 'Vault item'],
+    ['ORDER AMOUNT', '₹' + Number(order.amount || 0).toFixed(2)],
+    ['ORDER STATUS', String(order.status || 'unknown').toUpperCase()],
+    ['MATCHED UTR', payment.transaction_reference || utr],
+    ['PAYMENT STATUS', String(payment.status || 'unknown').toUpperCase()],
+    ['ORDER DATE', order.created_at ? new Date(order.created_at).toLocaleString() : 'Not available']
+  ];
+  rows.forEach(([label,value]) => {
+    const stat=document.createElement('div'); stat.className='order-stat';
+    const small=document.createElement('small'); small.textContent=label;
+    const strong=document.createElement('strong'); strong.textContent=value;
+    stat.append(small,strong); grid.appendChild(stat);
   });
-  if (!data?.length) placeholder.textContent = 'No paid/completed orders are eligible yet';
+  card.append(title,grid); card.hidden=false;
+  document.getElementById('refundForm').hidden=false;
+  message.textContent='UTR verified. Order details match your account. Review them before requesting a refund.';
 }
 
 async function loadRefundHistory() {
@@ -551,69 +600,61 @@ async function loadRefundHistory() {
   });
 }
 
+document.getElementById('refundUtr').addEventListener('input', resetRefundVerification);
+document.getElementById('utrVerifyForm').addEventListener('submit', async event => {
+  event.preventDefault();
+  if (!currentUser) return;
+  const button=document.getElementById('verifyUtrBtn');
+  const utr=document.getElementById('refundUtr').value.trim();
+  if (!utr) { message.textContent='Enter your payment UTR first.'; return; }
+  resetRefundVerification(); button.disabled=true; message.textContent='Verifying UTR…';
+  try { await verifyRefundUtr(utr); }
+  catch(error) { console.error(error); message.textContent='UTR verification failed: '+(error.message || 'Please try again.'); }
+  finally { button.disabled=false; }
+});
+
 document.getElementById('refundForm').addEventListener('submit', async event => {
   event.preventDefault();
-  const refundForm = event.currentTarget;
   if (!currentUser) return;
-  const orderId = document.getElementById('orderId').value;
-  const upiId = document.getElementById('upiId').value.trim();
-  const reason = document.getElementById('reason').value.trim();
-  const submit = event.currentTarget.querySelector('button[type="submit"]');
-  if (!orderId || !upiId || !reason) {
-    message.textContent = 'Select an eligible order and fill in the UPI ID and reason.';
-    return;
-  }
-  if (!/^[^\s@]+@[^\s@]+$/.test(upiId)) {
-    message.textContent = 'Enter a valid UPI ID, for example name@bank.';
-    return;
-  }
-  submit.disabled = true;
-  message.innerHTML = '<span class="loading-pulse">Submitting refund request…</span>'; 
+  const order=verifiedRefundOrder, payment=verifiedRefundPayment;
+  const upiId=document.getElementById('upiId').value.trim();
+  const reason=document.getElementById('reason').value.trim();
+  const submit=document.getElementById('submitRefundBtn');
+  if (!order || !payment) { message.textContent='Pehle UTR verify karein.'; return; }
+  if (!/^[^\s@]+@[^\s@]+$/.test(upiId)) { message.textContent='Valid UPI ID enter karein, jaise name@bank.'; return; }
+  if (!reason) { message.textContent='Refund ka reason enter karein.'; return; }
+  submit.disabled=true; message.textContent='Submitting refund request…';
   try {
-    const { data: order, error: orderError } = await supabase
-      .from('orders')
-      .select('id, amount, status')
-      .eq('id', orderId)
-      .eq('user_id', currentUser.id)
-      .in('status', ['paid', 'completed'])
-      .maybeSingle();
-    if (orderError) throw orderError;
-    if (!order) throw new Error('That order is not eligible for a refund request.');
-    const { data: payment, error: paymentError } = await supabase
-      .from('payment_submissions')
-      .select('id')
-      .eq('order_id', order.id)
-      .eq('user_id', currentUser.id)
-      .eq('status', 'approved')
-      .order('created_at', { ascending: false })
-      .limit(1)
-      .maybeSingle();
-    if (paymentError) throw paymentError;
-    if (!payment) throw new Error('A verified payment record is required before requesting a refund. Please contact support if your payment was already verified.');
-    const { data: existingRefunds, error: existingRefundError } = await supabase
-      .from('refund_requests').select('id,status').eq('order_id', order.id).eq('user_id', currentUser.id)
-      .in('status', ['pending','approved','completed']).limit(1);
-    if (existingRefundError) throw existingRefundError;
-    if (existingRefunds?.length) throw new Error('A refund request already exists for this order. Check My Refunds for its status.');
-    const { error } = await supabase.from('refund_requests').insert({
-      order_id: order.id,
-      payment_submission_id: payment?.id || null,
-      user_id: currentUser.id,
-      amount: Number(order.amount),
-      reason: `Refund UPI ID: ${upiId}\nReason: ${reason}`,
-      status: 'pending'
+    // Re-check ownership/status immediately before insert; never trust only browser state.
+    const { data: freshOrder, error: freshOrderError } = await supabase.from('orders')
+      .select('id,amount,status').eq('id',order.id).eq('user_id',currentUser.id).maybeSingle();
+    if (freshOrderError) throw freshOrderError;
+    if (!freshOrder || !['paid','completed'].includes(String(freshOrder.status||'').toLowerCase()))
+      throw new Error('Order status changed or the order is no longer eligible. Verify the UTR again.');
+    const { data: freshPayment, error: freshPaymentError } = await supabase.from('payment_submissions')
+      .select('id,status,transaction_reference').eq('id',payment.id).eq('user_id',currentUser.id)
+      .eq('order_id',order.id).eq('status','approved').maybeSingle();
+    if (freshPaymentError) throw freshPaymentError;
+    if (!freshPayment || freshPayment.transaction_reference !== document.getElementById('refundUtr').value.trim())
+      throw new Error('Payment verification expired. Please verify the UTR again.');
+    const { data: existingRefunds, error: existingError } = await supabase.from('refund_requests')
+      .select('id,status').eq('order_id',order.id).eq('user_id',currentUser.id)
+      .in('status',['pending','approved','completed']).limit(1);
+    if (existingError) throw existingError;
+    if (existingRefunds?.length) throw new Error('A refund request already exists for this order. Check My Refunds.');
+    const { error: insertError } = await supabase.from('refund_requests').insert({
+      order_id:order.id, payment_submission_id:payment.id, user_id:currentUser.id,
+      amount:Number(freshOrder.amount), reason:`Refund UPI ID: ${upiId}\nCustomer reason: ${reason}\nVerified UTR: ${freshPayment.transaction_reference}`,
+      status:'pending'
     });
-    if (error) throw error;
-    refundForm.reset();
-    message.textContent = 'Refund request submitted successfully. It is pending admin review. No extra fee was charged by this form.';
+    if (insertError) throw insertError;
+    document.getElementById('refundForm').reset();
+    document.getElementById('refundUtr').value=''; resetRefundVerification();
+    message.textContent='Refund request submitted. It is pending admin review. No upfront processing fee is required to submit a refund request.';
     await loadRefundHistory();
-    await loadRefundOptions();
-  } catch (error) {
-    console.error(error);
-    message.textContent = 'Refund request failed: ' + (error.message || 'Please try again.');
-  } finally {
-    submit.disabled = false;
-  }
+  } catch(error) {
+    console.error(error); message.textContent='Refund request failed: '+(error.message || 'Please try again.');
+  } finally { submit.disabled=false; }
 });
 
 document.getElementById('logoutBtn').addEventListener('click', async () => {

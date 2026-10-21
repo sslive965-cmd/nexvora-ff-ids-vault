@@ -812,7 +812,25 @@ async function loadPolicy() {
   const save = document.createElement('button'); save.type='button'; save.textContent='SAVE WEBSITE POLICY'; save.className='primary';
   const { data, error } = await supabase.from('site_policies').select('id,title,body').eq('id',1).maybeSingle();
   if (error) { const err=document.createElement('p'); err.textContent='Policy could not load: '+error.message; content.append(heading,help,err); return; }
-  titleInput.value=data?.title || 'NEXVORA Website Policy'; bodyInput.value=data?.body || '';
+  titleInput.value=data?.title || 'NEXVORA Website & Refund Policy'; bodyInput.value=(data?.body && data.body.trim()) ? (data.body.includes('No refund-unlock fee') ? data.body : data.body.trim() + `\n\nREFUND POLICY ADDENDUM\n\nRefund requests are reviewed by the admin. Approval does not mean the money has already been transferred. Review and UPI/bank processing times can vary, and no fixed refund time is guaranteed unless official support confirms it in writing.\n\nNEXVORA does not require an extra upfront processing fee to unlock, release or guarantee a refund. Do not pay anyone claiming an additional payment is required to release an existing refund.\n\nA refund request may be declined if the payment cannot be verified, order details conflict, the order is ineligible, or another active refund request already exists. Use only official website support and never share passwords or OTPs.`) : `NEXVORA WEBSITE, PAYMENT & REFUND POLICY
+
+1. Accurate information: Customers must provide correct account, order and payment details. Never share passwords or OTPs with anyone.
+
+2. Payments: Pay only the amount shown for the selected listing using the payment instructions displayed on the official website. Keep the UTR/transaction reference for your records. A submitted UTR is not proof of payment until the payment is matched and approved by the admin.
+
+3. Order verification: Refund requests can be submitted only for an order linked to the signed-in customer and an approved payment record. The website checks the UTR against the customer's own payment record.
+
+4. Refund review: A request is reviewed by the admin. Approval of a request does not mean the refund has already been transferred. The admin should update the status only when the relevant review or transfer step has actually occurred. If more information is needed, contact official support.
+
+5. No refund-unlock fee: NEXVORA does not require an extra upfront processing fee to unlock, release or guarantee a refund. Do not pay anyone claiming that an additional payment is required to release your existing refund.
+
+6. Eligibility and exclusions: Requests may be declined where the order is not eligible, payment cannot be verified, details conflict, or the same order already has an active refund request. Digital goods already delivered or transferred may need individual review.
+
+7. Timelines: Review and bank/UPI processing times can vary. No fixed refund time is guaranteed unless confirmed by official support in writing.
+
+8. Support and fraud prevention: Use only the support link shown on the official website. Keep payment records and never send passwords, OTPs or full banking credentials.
+
+9. Policy updates: The latest policy published in the admin panel applies to future requests. Contact official support if anything is unclear.`;
   save.addEventListener('click', async () => {
     if (!titleInput.value.trim() || !bodyInput.value.trim()) { message.textContent='Policy title and text are required.'; return; }
     save.disabled=true; const { data: adminData }=await supabase.auth.getUser();
