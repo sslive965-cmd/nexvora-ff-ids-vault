@@ -109,10 +109,10 @@ input:focus,select:focus,textarea:focus{border-color:var(--green)}
 
   <section class="panel">
     <h2>REFUND REQUEST</h2>
-    <p>Submit a request for an eligible order. The refund request form is not connected to the database yet.</p>
+    <p>Submit a refund request for a paid or completed order. Admin will review the request and update its status.</p>
     <form id="refundForm">
       <label for="orderId">ORDER REFERENCE</label>
-      <input id="orderId" required placeholder="Enter your order reference">
+      <select id="orderId" required><option value="">Loading eligible orders…</option></select>
       <label for="upiId">YOUR UPI ID</label>
       <input id="upiId" required maxlength="100" placeholder="name@bank">
       <label for="reason">REASON</label>
@@ -299,6 +299,7 @@ async function init() {
   }
 
   await loadOrders();
+  await loadRefundOptions();
 }
 
 document.getElementById('refreshOrdersBtn').addEventListener('click', loadOrders);
@@ -363,10 +364,82 @@ document.getElementById('changePasswordForm').addEventListener('submit', async e
   message.textContent = 'Password updated successfully.';
 });
 
-document.getElementById('refundForm').addEventListener('submit', event => {
+async function loadRefundOptions() {
+  const select = document.getElementById('orderId');
+  const { data, error } = await supabase
+    .from('orders')
+    .select('id, listing_title, amount, status')
+    .eq('user_id', currentUser.id)
+    .in('status', ['paid', 'completed'])
+    .order('created_at', { ascending: false });
+  select.replaceChildren();
+  const placeholder = document.createElement('option');
+  placeholder.value = '';
+  placeholder.textContent = error ? 'Could not load eligible orders' : 'Select a paid/completed order';
+  select.appendChild(placeholder);
+  if (error) {
+    message.textContent = 'Eligible orders could not be loaded: ' + error.message;
+    return;
+  }
+  (data || []).forEach(order => {
+    const option = document.createElement('option');
+    option.value = String(order.id);
+    option.textContent = `#${order.id} — ${order.listing_title || 'Vault item'} — ₹${Number(order.amount || 0).toFixed(2)} (${order.status})`;
+    select.appendChild(option);
+  });
+  if (!data?.length) placeholder.textContent = 'No paid/completed orders are eligible yet';
+}
+
+document.getElementById('refundForm').addEventListener('submit', async event => {
   event.preventDefault();
-  message.textContent =
-    'Refund requests are not connected yet. Your request was not submitted.';
+  if (!currentUser) return;
+  const orderId = document.getElementById('orderId').value;
+  const upiId = document.getElementById('upiId').value.trim();
+  const reason = document.getElementById('reason').value.trim();
+  const submit = event.currentTarget.querySelector('button[type="submit"]');
+  if (!orderId || !upiId || !reason) {
+    message.textContent = 'Select an eligible order and fill in the UPI ID and reason.';
+    return;
+  }
+  submit.disabled = true;
+  message.textContent = 'Submitting refund request…';
+  try {
+    const { data: order, error: orderError } = await supabase
+      .from('orders')
+      .select('id, amount, status')
+      .eq('id', orderId)
+      .eq('user_id', currentUser.id)
+      .in('status', ['paid', 'completed'])
+      .maybeSingle();
+    if (orderError) throw orderError;
+    if (!order) throw new Error('That order is not eligible for a refund request.');
+    const { data: payment } = await supabase
+      .from('payment_submissions')
+      .select('id')
+      .eq('order_id', order.id)
+      .eq('user_id', currentUser.id)
+      .eq('status', 'approved')
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    const { error } = await supabase.from('refund_requests').insert({
+      order_id: order.id,
+      payment_submission_id: payment?.id || null,
+      user_id: currentUser.id,
+      amount: Number(order.amount),
+      reason: `Refund UPI ID: ${upiId}\nReason: ${reason}`,
+      status: 'pending'
+    });
+    if (error) throw error;
+    event.currentTarget.reset();
+    message.textContent = 'Refund request submitted successfully. It is pending admin review.';
+    await loadRefundOptions();
+  } catch (error) {
+    console.error(error);
+    message.textContent = 'Refund request failed: ' + (error.message || 'Please try again.');
+  } finally {
+    submit.disabled = false;
+  }
 });
 
 document.getElementById('logoutBtn').addEventListener('click', async () => {

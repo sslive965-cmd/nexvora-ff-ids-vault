@@ -399,8 +399,24 @@ async function loadListings() {
         if (!window.confirm(`Delete listing #${item.id}? This removes the listing record, not its uploaded image files.`)) return;
         deleteBtn.disabled = true;
         const { error: deleteError } = await supabase.from('vault_listings').delete().eq('id', item.id);
+        if (deleteError?.code === '23503') {
+          // Keep historical orders intact; hide linked listings by marking them inactive.
+          const { error: inactiveError } = await supabase
+            .from('vault_listings')
+            .update({ status: 'inactive' })
+            .eq('id', item.id);
+          if (inactiveError) {
+            message.textContent = 'Could not delete or deactivate listing: ' + inactiveError.message;
+            deleteBtn.disabled = false;
+            return;
+          }
+          if (editingListingId === item.id) resetForm();
+          message.textContent = 'Listing has existing orders, so it was safely marked inactive instead of deleting order history.';
+          await refreshList();
+          return;
+        }
         if (deleteError) {
-          message.textContent = 'Delete failed: ' + deleteError.message + (deleteError.code === '23503' ? ' This listing is linked to an order; change its status to inactive instead of deleting it.' : '');
+          message.textContent = 'Delete failed: ' + deleteError.message;
           deleteBtn.disabled = false;
           return;
         }
@@ -552,15 +568,54 @@ async function loadOrders(){
  content.appendChild(makeTable(['ID','LISTING','AMOUNT','CREATED','CUSTOMER DETAILS','STATUS & DELIVERY DETAILS'],rows));
 }
 async function loadPayments(){
- if(!(await verifyAdmin()))return;
- const content=document.getElementById('sectionContent');content.replaceChildren();const h=document.createElement('h2');h.textContent='PAYMENT REVIEW';content.appendChild(h);const note=document.createElement('p');note.textContent='Check the UTR and screenshot before approving. Approval marks the submission approved and its linked order paid.';content.appendChild(note);
- const {data,error}=await supabase.from('payment_submissions').select('id,order_id,user_id,payment_method,transaction_reference,screenshot_url,amount,status,admin_note,created_at').order('created_at',{ascending:false}).limit(200);
- if(error){const p=document.createElement('p');p.textContent='Payments could not load: '+error.message;content.appendChild(p);return}
- if(!data?.length){const p=document.createElement('p');p.textContent='No payment submissions found.';content.appendChild(p);return}
- const rows=[];
- for(const pay of data){const details=document.createElement('div');details.textContent=`Order #${pay.order_id}\nUser: ${pay.user_id||'—'}\nMethod: ${pay.payment_method||'—'}\nUTR: ${pay.transaction_reference||'—'}\nSubmitted: ${pay.created_at?new Date(pay.created_at).toLocaleString():'—'}`;details.style.whiteSpace='pre-line';let screenshot='No screenshot';if(pay.screenshot_url){const {data:sd,error:se}=await supabase.storage.from('vault-payment-proofs').createSignedUrl(pay.screenshot_url,300);if(!se&&sd?.signedUrl){screenshot=document.createElement('a');screenshot.href=sd.signedUrl;screenshot.target='_blank';screenshot.rel='noopener noreferrer';screenshot.textContent='Open proof (5 min)'}else screenshot='Screenshot unavailable: '+(se?.message||'signed URL failed')}
- const status=document.createElement('select');['pending','approved','rejected'].forEach(v=>{const op=document.createElement('option');op.value=v;op.textContent=v;status.appendChild(op)});status.value=pay.status||'pending';const adminNote=document.createElement('input');adminNote.type='text';adminNote.placeholder='Optional admin note';adminNote.value=pay.admin_note||'';adminNote.style.maxWidth='180px';const save=document.createElement('button');save.type='button';save.textContent='Save review';save.addEventListener('click',async()=>{if(!(await verifyAdmin()))return;if(status.value==='approved'&&!window.confirm(`Confirm UTR and screenshot are verified for payment #${pay.id} (₹${Number(pay.amount||0).toFixed(2)})? This marks order #${pay.order_id} as paid.`))return;save.disabled=true;const {error:e}=await supabase.from('payment_submissions').update({status:status.value,admin_note:adminNote.value.trim()||null,reviewed_at:new Date().toISOString()}).eq('id',pay.id);if(e){message.textContent='Review update failed: '+e.message;save.disabled=false;return}if(status.value==='approved'){const {error:oe}=await supabase.from('orders').update({status:'paid',updated_at:new Date().toISOString()}).eq('id',pay.order_id);if(oe){message.textContent='Payment review saved, but order status update failed: '+oe.message;save.disabled=false;return}}message.textContent=`Payment #${pay.id} review saved.`;save.disabled=false;await loadPayments()});const controls=document.createElement('div');controls.style.cssText='display:grid;gap:8px;min-width:140px';controls.append(status,adminNote,save);rows.push([String(pay.id),String(pay.order_id),`₹${Number(pay.amount||0).toFixed(2)}`,pay.status||'pending',details,screenshot,controls]);}
- content.appendChild(makeTable(['PAYMENT ID','ORDER','AMOUNT','STATUS','PAYMENT DETAILS','SCREENSHOT','REVIEW'],rows));
+  if(!(await verifyAdmin()))return;
+  const content=document.getElementById('sectionContent');
+  content.replaceChildren();
+  const h=document.createElement('h2');h.textContent='PAYMENT REVIEW';content.appendChild(h);
+  const note=document.createElement('p');
+  note.textContent='No screenshot is collected. Match each UTR against the actual bank/UPI transaction ledger and confirm the amount and order before approving. A submitted UTR alone is not proof of payment.';
+  content.appendChild(note);
+  const {data,error}=await supabase.from('payment_submissions')
+    .select('id,order_id,user_id,payment_method,transaction_reference,amount,status,admin_note,created_at')
+    .order('created_at',{ascending:false}).limit(200);
+  if(error){const p=document.createElement('p');p.textContent='Payments could not load: '+error.message;content.appendChild(p);return}
+  if(!data?.length){const p=document.createElement('p');p.textContent='No payment submissions found.';content.appendChild(p);return}
+  const counts=new Map();
+  data.forEach(pay=>{const key=String(pay.transaction_reference||'').trim().toLowerCase();if(key)counts.set(key,(counts.get(key)||0)+1)});
+  const rows=[];
+  for(const pay of data){
+   const utr=String(pay.transaction_reference||'').trim();
+   const key=utr.toLowerCase();
+   const details=document.createElement('div');
+   details.textContent=`Order #${pay.order_id}\nUser: ${pay.user_id||'—'}\nMethod: ${pay.payment_method||'—'}\nUTR: ${utr||'MISSING — DO NOT APPROVE'}\nSubmitted: ${pay.created_at?new Date(pay.created_at).toLocaleString():'—'}${key&&counts.get(key)>1?'\nWARNING: This UTR appears on multiple submissions. Investigate before approval.':''}`;
+   details.style.whiteSpace='pre-line';
+   const status=document.createElement('select');
+   ['pending','approved','rejected'].forEach(v=>{const op=document.createElement('option');op.value=v;op.textContent=v;status.appendChild(op)});
+   status.value=pay.status||'pending';
+   const adminNote=document.createElement('textarea');adminNote.placeholder='Admin note (e.g. bank ledger checked)';adminNote.value=pay.admin_note||'';
+   adminNote.style.maxWidth='220px';adminNote.rows=3;
+   const save=document.createElement('button');save.type='button';save.textContent='Save review';
+   save.addEventListener('click',async()=>{
+    if(!(await verifyAdmin()))return;
+    if(status.value==='approved'&&!utr){message.textContent='Cannot approve a payment without a UTR.';return}
+    if(status.value==='approved'&&!window.confirm(`Confirm you matched UTR "${utr}" to a real payment of ₹${Number(pay.amount||0).toFixed(2)} for order #${pay.order_id}? This marks the order as paid.`))return;
+    save.disabled=true;
+    try{
+     const {error:e}=await supabase.from('payment_submissions').update({status:status.value,admin_note:adminNote.value.trim()||null,reviewed_at:new Date().toISOString()}).eq('id',pay.id);
+     if(e)throw e;
+     if(status.value==='approved'||status.value==='rejected'){
+      const {error:oe}=await supabase.from('orders').update({status:status.value==='approved'?'paid':'rejected',updated_at:new Date().toISOString()}).eq('id',pay.order_id);
+      if(oe)throw new Error('Review saved but order status update failed: '+oe.message);
+     }
+     message.textContent=`Payment #${pay.id} review saved.`;
+     await loadPayments();
+    }catch(err){message.textContent='Review update failed: '+(err.message||'Please try again.')}
+    finally{save.disabled=false}
+   });
+   const controls=document.createElement('div');controls.style.cssText='display:grid;gap:8px;min-width:140px';controls.append(status,adminNote,save);
+   rows.push([String(pay.id),String(pay.order_id),`₹${Number(pay.amount||0).toFixed(2)}`,pay.status||'pending',details,controls]);
+  }
+  content.appendChild(makeTable(['PAYMENT ID','ORDER','AMOUNT','STATUS','UTR / TRANSACTION DETAILS','REVIEW'],rows));
 }
 
 async function loadRefunds() {
