@@ -29,6 +29,9 @@ textarea{min-height:85px;resize:vertical}
 input:focus,select:focus,textarea:focus{border-color:var(--green)}
 .primary{width:100%;margin-top:15px;padding:13px;border:0;border-radius:5px;background:var(--green);color:#031006;font-weight:900}
 .actions{display:flex;flex-wrap:wrap;gap:9px;margin-top:18px}
+.dashboard-actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.dashboard-actions button{width:100%;min-height:48px;font-weight:800;letter-spacing:.4px}
+@media(max-width:380px){.dashboard-actions{grid-template-columns:1fr}}
 #message{font-size:12px;line-height:1.8;color:var(--green);overflow-wrap:anywhere}
 #orders{color:var(--muted);font-size:12px;line-height:1.8}
 .order-card{border:1px solid #39ff7830;border-radius:7px;padding:15px;margin-top:13px;background:#050a06}
@@ -67,9 +70,21 @@ input:focus,select:focus,textarea:focus{border-color:var(--green)}
 <main>
   <p>PLAYER ACCOUNT / CONTROL CENTER</p>
   <h1>MY DASHBOARD</h1>
-  <p>Manage your profile and check your order information.</p>
+  <p>Choose an account action below.</p>
 
-  <section class="panel">
+  <section class="panel" id="dashboardMenu">
+    <h2>CUSTOMER CONTROL CENTER</h2>
+    <div class="dashboard-actions">
+      <button class="secondary" type="button" data-open-panel="profileForm">CHANGE USERNAME</button>
+      <button class="secondary" type="button" data-open-panel="passwordForm">CHANGE PASSWORD</button>
+      <button class="secondary" type="button" data-open-panel="myOrders">MY ORDERS</button>
+      <button class="secondary" type="button" data-open-panel="refundPanel">MY REFUNDS</button>
+      <button class="secondary" type="button" data-logout>LOG OUT</button>
+    </div>
+    <p id="menuMessage">Select a button to open that section.</p>
+  </section>
+
+  <section class="panel" id="accountDetails" hidden>
     <h2>ACCOUNT DETAILS</h2>
     <div class="row"><span>USERNAME</span><span id="currentUsername">Loading...</span></div>
     <div class="row"><span>EMAIL</span><span id="currentEmail">Loading...</span></div>
@@ -79,7 +94,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--green)}
     </div>
   </section>
 
-  <section class="panel" id="profileForm">
+  <section class="panel" id="profileForm" hidden>
     <h2>UPDATE USERNAME</h2>
     <form id="usernameForm">
       <label for="newUsername">NEW USERNAME</label>
@@ -88,7 +103,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--green)}
     </form>
   </section>
 
-  <section class="panel" id="passwordForm">
+  <section class="panel" id="passwordForm" hidden>
     <h2>SECURITY SETTINGS</h2>
     <p>For your safety, existing passwords are never displayed. You can set a new password here.</p>
     <form id="changePasswordForm">
@@ -100,14 +115,14 @@ input:focus,select:focus,textarea:focus{border-color:var(--green)}
     </form>
   </section>
 
-  <section class="panel" id="myOrders">
+  <section class="panel" id="myOrders" hidden>
     <h2>MY ORDERS</h2>
     <p>Your orders and their latest recorded status.</p>
     <div id="orders" aria-live="polite">Loading your orders...</div>
     <button class="secondary refresh" id="refreshOrdersBtn" type="button">↻ REFRESH ORDERS</button>
   </section>
 
-  <section class="panel">
+  <section class="panel" id="refundPanel" hidden>
     <h2>REFUND REQUEST</h2>
     <p>Submit a refund request for a paid or completed order. Admin will review the request and update its status.</p>
     <form id="refundForm">
@@ -121,8 +136,14 @@ input:focus,select:focus,textarea:focus{border-color:var(--green)}
     </form>
   </section>
 
+  <section class="panel" id="refundHistoryPanel" hidden>
+    <h2>REFUND HISTORY</h2>
+    <div id="refundHistory" aria-live="polite">Loading refund history...</div>
+    <button class="secondary refresh" id="refreshRefundsBtn" type="button">↻ REFRESH REFUNDS</button>
+  </section>
+
   <div id="message" role="status" aria-live="polite"></div>
-  <div class="actions">
+  <div class="actions" id="footerActions" hidden>
     <a class="secondary" href="https://t.me/NEXVORA_X" target="_blank" rel="noopener noreferrer">TELEGRAM SUPPORT ↗</a>
     <button class="secondary" id="logoutBtn" type="button">LOG OUT</button>
   </div>
@@ -257,6 +278,7 @@ async function loadOrders() {
           </div>
           <div class="order-date">ORDER DATE: ${date}</div>
           ${deliveryHTML}
+          <button class="secondary order-delete" type="button" data-delete-order="${id}">DELETE ORDER</button>
         </article>
       `;
     }).join('');
@@ -300,9 +322,70 @@ async function init() {
 
   await loadOrders();
   await loadRefundOptions();
+  await loadRefundHistory();
 }
 
 document.getElementById('refreshOrdersBtn').addEventListener('click', loadOrders);
+document.getElementById('orders').addEventListener('click', async event => {
+  const button = event.target.closest('[data-delete-order]');
+  if (!button || !currentUser) return;
+  const orderId = button.getAttribute('data-delete-order');
+  if (!window.confirm(`Delete order #${orderId}? Only an unpaid order with no payment or refund record can be deleted. Financial history is protected.`)) return;
+  button.disabled = true;
+  message.textContent = 'Checking whether this order can be safely deleted…';
+  try {
+    const { data: order, error: orderError } = await supabase.from('orders')
+      .select('id,status').eq('id', orderId).eq('user_id', currentUser.id).maybeSingle();
+    if (orderError) throw orderError;
+    if (!order) throw new Error('Order not found or you do not have permission to delete it.');
+    const status = String(order.status || '').toLowerCase();
+    if (!['pending','rejected','cancelled','failed'].includes(status))
+      throw new Error('Paid, completed, delivered, or otherwise active financial orders cannot be deleted.');
+    const [payments, refunds] = await Promise.all([
+      supabase.from('payment_submissions').select('id').eq('order_id', order.id).limit(1),
+      supabase.from('refund_requests').select('id').eq('order_id', order.id).limit(1)
+    ]);
+    if (payments.error) throw payments.error;
+    if (refunds.error) throw refunds.error;
+    if (payments.data?.length || refunds.data?.length)
+      throw new Error('This order has payment/refund history and is protected from deletion.');
+    const { error: deleteError } = await supabase.from('orders').delete().eq('id', order.id).eq('user_id', currentUser.id);
+    if (deleteError) throw deleteError;
+    message.textContent = `Order #${orderId} deleted.`;
+    await loadOrders();
+    await loadRefundOptions();
+  } catch (err) {
+    message.textContent = 'Order not deleted: ' + (err.message || 'Please try again.');
+    button.disabled = false;
+  }
+});
+
+document.getElementById('refreshRefundsBtn').addEventListener('click', loadRefundHistory);
+document.querySelectorAll('[data-open-panel]').forEach(button => button.addEventListener('click', async () => {
+  const target = button.getAttribute('data-open-panel');
+  document.getElementById('dashboardMenu').hidden = true;
+  ['accountDetails','profileForm','passwordForm','myOrders','refundPanel','refundHistoryPanel'].forEach(id => {
+    const panel = document.getElementById(id); if (panel) panel.hidden = true;
+  });
+  if (target === 'refundPanel') {
+    document.getElementById('refundPanel').hidden = false;
+    document.getElementById('refundHistoryPanel').hidden = false;
+    await loadRefundOptions(); await loadRefundHistory();
+  } else {
+    document.getElementById(target).hidden = false;
+    if (target === 'myOrders') await loadOrders();
+  }
+  document.getElementById('footerActions').hidden = false;
+  window.scrollTo({top:0,behavior:'smooth'});
+}));
+document.querySelectorAll('[data-logout]').forEach(button => button.addEventListener('click', () => document.getElementById('logoutBtn').click()));
+document.getElementById('backToMenuBtn').addEventListener('click', () => {
+  ['accountDetails','profileForm','passwordForm','myOrders','refundPanel','refundHistoryPanel'].forEach(id => { const panel = document.getElementById(id); if (panel) panel.hidden = true; });
+  document.getElementById('dashboardMenu').hidden = false;
+  document.getElementById('footerActions').hidden = true;
+  window.scrollTo({top:0,behavior:'smooth'});
+});
+
 
 document.getElementById('usernameForm').addEventListener('submit', async event => {
   event.preventDefault();
@@ -388,6 +471,28 @@ async function loadRefundOptions() {
     select.appendChild(option);
   });
   if (!data?.length) placeholder.textContent = 'No paid/completed orders are eligible yet';
+}
+
+async function loadRefundHistory() {
+  const container = document.getElementById('refundHistory');
+  if (!currentUser) { container.textContent = 'Please sign in to view refunds.'; return; }
+  container.textContent = 'Loading refund history…';
+  const { data, error } = await supabase.from('refund_requests')
+    .select('id,order_id,amount,reason,status,admin_note,created_at')
+    .eq('user_id', currentUser.id).order('created_at', { ascending: false });
+  container.replaceChildren();
+  if (error) { container.textContent = 'Refund history could not load: ' + error.message; return; }
+  if (!data?.length) { container.textContent = 'No refund requests yet.'; return; }
+  data.forEach(refund => {
+    const card = document.createElement('article'); card.className = 'order-card';
+    const title = document.createElement('div'); title.className = 'order-title';
+    title.textContent = `Refund #${refund.id} · Order #${refund.order_id}`;
+    const details = document.createElement('p');
+    details.textContent = `Amount: ₹${Number(refund.amount || 0).toFixed(2)} · Status: ${refund.status || 'pending'} · Reason: ${refund.reason || 'Not provided'}${refund.admin_note ? ' · Admin note: ' + refund.admin_note : ''}`;
+    const date = document.createElement('div'); date.className = 'order-date';
+    date.textContent = refund.created_at ? new Date(refund.created_at).toLocaleString() : '';
+    card.append(title, details, date); container.appendChild(card);
+  });
 }
 
 document.getElementById('refundForm').addEventListener('submit', async event => {
