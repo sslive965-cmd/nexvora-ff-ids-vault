@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -18,11 +19,9 @@
 }
 *{box-sizing:border-box}
 body{
-  margin:0;
-  min-height:100vh;
+  margin:0;min-height:100vh;
   background:radial-gradient(ellipse at top,#102a17,transparent 45%),var(--bg);
-  color:var(--soft);
-  font-family:Arial,sans-serif;
+  color:var(--soft);font-family:Arial,sans-serif;
 }
 header{
   display:flex;align-items:center;justify-content:space-between;
@@ -77,29 +76,53 @@ button:disabled{opacity:.5;cursor:not-allowed}
 .success{color:var(--green)}
 [hidden]{display:none!important}
 
+/* FIX: payment method tabs use NEXVORA neon green, never purple */
 .payment-tabs{
-  display:grid;grid-template-columns:1fr 1fr;gap:5px;
-  padding:5px;border:1px solid #ffffff15;
-  background:#080a08;border-radius:12px;margin:16px 0;
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:5px;
+  padding:5px;
+  border:1px solid #39ff7835;
+  background:#050b06;
+  border-radius:12px;
+  margin:16px 0;
 }
 .payment-tab{
-  margin:0;min-height:54px;padding:12px 7px;
-  background:transparent;color:#8c968e;
-  border:1px solid transparent;border-radius:8px;
-  font-size:12px;letter-spacing:0;
+  margin:0;
+  min-height:54px;
+  padding:12px 7px;
+  background:#080d09 !important;
+  color:#a0ffb7 !important;
+  border:1px solid #39ff7835 !important;
+  border-radius:8px;
+  font-size:12px;
+  letter-spacing:0;
+  box-shadow:none !important;
+  transition:background .2s ease,color .2s ease,border-color .2s ease;
 }
-.payment-tab.active{
-  background:linear-gradient(110deg,#a52bff,#e22bf4);
-  color:white;border-color:#e95aff;
-  box-shadow:0 0 20px #d32aff30;
+.payment-tab.active,
+.payment-tab.active:hover,
+.payment-tab[aria-pressed="true"]{
+  background:linear-gradient(110deg,#12391e,#39ff78) !important;
+  color:#031006 !important;
+  border-color:#39ff78 !important;
+  box-shadow:0 0 16px #39ff7830 !important;
+}
+.payment-tab:not(.active):hover{
+  background:#102416 !important;
+  color:#39ff78 !important;
+  border-color:#39ff7860 !important;
 }
 .payment-content{
-  border:1px solid #ffffff13;background:#0b0b0d;
-  border-radius:12px;padding:16px;margin-bottom:14px;
+  border:1px solid #39ff7830;
+  background:#080d09;
+  border-radius:12px;
+  padding:16px;
+  margin-bottom:14px;
 }
 .qr-frame{
   display:flex;align-items:center;justify-content:center;
-  padding:15px;background:#101012;border:1px solid #ffffff18;
+  padding:15px;background:#050b06;border:1px solid #39ff7835;
   border-radius:12px;margin:12px auto;width:min(100%,340px);
 }
 #dynamicQr{
@@ -150,67 +173,34 @@ footer{
   <section class="panel">
     <div class="eyebrow">◆ VAULT CHECKOUT</div>
     <h1>SECURE PAYMENT</h1>
-    <p>
-      Confirm the selected listing, create an order, and pay the exact
-      amount. Your payment remains pending until an admin verifies
-      the transaction reference.
-    </p>
-    <div id="status" class="notice" role="status" aria-live="polite">
-      Checking your session and listing…
-    </div>
+    <p>Confirm the selected listing, create an order, and pay the exact amount. Your payment remains pending until an admin verifies the transaction reference.</p>
+    <div id="status" class="notice" role="status" aria-live="polite">Checking your session and listing…</div>
   </section>
 
   <section class="panel" id="listingPanel" hidden>
     <h2>ORDER SUMMARY</h2>
     <div class="grid">
-      <div class="field">
-        <span>LISTING</span>
-        <strong id="listingTitle">—</strong>
-      </div>
-      <div class="field">
-        <span>AMOUNT</span>
-        <strong id="listingPrice">—</strong>
-      </div>
-      <div class="field">
-        <span>LISTING ID</span>
-        <strong id="listingId">—</strong>
-      </div>
-      <div class="field">
-        <span>ACCOUNT</span>
-        <strong id="accountEmail">—</strong>
-      </div>
+      <div class="field"><span>LISTING</span><strong id="listingTitle">—</strong></div>
+      <div class="field"><span>AMOUNT</span><strong id="listingPrice">—</strong></div>
+      <div class="field"><span>LISTING ID</span><strong id="listingId">—</strong></div>
+      <div class="field"><span>ACCOUNT</span><strong id="accountEmail">—</strong></div>
     </div>
     <button id="createOrderBtn" type="button">CREATE ORDER</button>
   </section>
 
   <section class="panel" id="paymentPanel" hidden>
     <h2>PAYMENT DETAILS</h2>
-
-    <div id="paymentInstructions" class="notice warning">
-      Preparing official payment details…
-    </div>
+    <div id="paymentInstructions" class="notice warning">Preparing official payment details…</div>
 
     <div id="upiArea" hidden>
       <div class="grid" style="margin-top:12px">
-        <div class="field">
-          <span>PAY TO UPI ID</span>
-          <strong id="upiIdText"></strong>
-        </div>
-        <div class="field">
-          <span>EXACT ORDER AMOUNT</span>
-          <strong id="payAmount"></strong>
-        </div>
+        <div class="field"><span>PAY TO UPI ID</span><strong id="upiIdText"></strong></div>
+        <div class="field"><span>EXACT ORDER AMOUNT</span><strong id="payAmount"></strong></div>
       </div>
 
       <div class="payment-tabs" role="group" aria-label="Payment method">
-        <button class="payment-tab active" id="qrTab"
-          type="button" aria-pressed="true">
-          ▦ &nbsp; Scan QR Code
-        </button>
-        <button class="payment-tab" id="upiTab"
-          type="button" aria-pressed="false">
-          ▯ &nbsp; Pay with UPI App
-        </button>
+        <button class="payment-tab active" id="qrTab" type="button" aria-pressed="true">▦ &nbsp; Scan QR Code</button>
+        <button class="payment-tab" id="upiTab" type="button" aria-pressed="false">▯ &nbsp; Pay with UPI App</button>
       </div>
 
       <div id="qrMode" class="payment-content">
@@ -219,25 +209,14 @@ footer{
           <img id="dynamicQr" alt="UPI payment QR code" hidden>
           <div id="qrLoading" class="notice">Generating payment QR…</div>
         </div>
-        <p id="qrCaption" class="qr-caption">
-          Scan with your UPI app and verify the amount before paying.
-        </p>
+        <p id="qrCaption" class="qr-caption">Scan with your UPI app and verify the amount before paying.</p>
       </div>
 
       <div id="upiMode" class="payment-content" hidden>
         <h2>PAY WITH UPI APP</h2>
-        <p>
-          Tap the button below to open an installed UPI app that supports
-          payment links. Confirm the receiver and amount in that app.
-        </p>
-        <a id="payViaUpi" class="upi-launch" href="#"
-          aria-disabled="true">
-          OPEN UPI APP
-        </a>
-        <div class="notice" style="margin-top:12px">
-          If no UPI app opens, return to QR Code and scan it with your
-          preferred payment app.
-        </div>
+        <p>Tap below to open a compatible installed UPI app. Confirm the receiver and amount in that app.</p>
+        <a id="payViaUpi" class="upi-launch" href="#" aria-disabled="true">OPEN UPI APP</a>
+        <div class="notice" style="margin-top:12px">If no UPI app opens, return to QR Code and scan it with your preferred payment app.</div>
       </div>
 
       <div class="notice order-ref">
@@ -245,20 +224,12 @@ footer{
         <strong id="orderNumber">—</strong>
       </div>
 
-      <p>
-        After paying, enter the transaction reference below. Submitting
-        a UTR does not itself prove that payment succeeded. An admin must
-        verify the transaction.
-      </p>
+      <p>After paying, enter the transaction reference below. An admin must verify the transaction before approving payment.</p>
 
       <form id="proofForm">
         <label for="utr">UPI TRANSACTION REFERENCE / UTR *</label>
-        <input id="utr" name="utr" maxlength="100"
-          required autocomplete="off"
-          placeholder="Enter UTR / Transaction ID">
-        <button id="submitProofBtn" type="submit">
-          SUBMIT UTR FOR VERIFICATION
-        </button>
+        <input id="utr" name="utr" maxlength="100" required autocomplete="off" placeholder="Enter UTR / Transaction ID">
+        <button id="submitProofBtn" type="submit">SUBMIT UTR FOR VERIFICATION</button>
       </form>
     </div>
   </section>
@@ -266,13 +237,8 @@ footer{
   <section class="panel" id="donePanel" hidden>
     <div class="spinner"></div>
     <h2>UTR SUBMITTED</h2>
-    <div class="notice success" id="doneText">
-      Your UTR was submitted for admin review.
-    </div>
-    <p>
-      Your payment is not approved yet. Keep your transaction reference
-      and check your order status later.
-    </p>
+    <div class="notice success" id="doneText">Your UTR was submitted for admin review.</div>
+    <p>Your payment is not approved yet. Keep your transaction reference and check your order status later.</p>
     <a class="back" href="vault.html">RETURN TO VAULT</a>
   </section>
 </main>
@@ -280,22 +246,13 @@ footer{
 <footer>NEXVORA FF IDs VAULT · UTR VERIFICATION REQUIRED</footer>
 
 <script type="module">
-import { createClient } from
-  'https://esm.sh/@supabase/supabase-js@2';
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
-const SUPABASE_URL =
-  'https://eggcveabpqldhcpzcmcr.supabase.co';
-
-const SUPABASE_PUBLISHABLE_KEY =
-  'sb_publishable_IVWNe_8YmgLmaXUHOymn1Q_t7Kso8Bd';
-
+const SUPABASE_URL = 'https://eggcveabpqldhcpzcmcr.supabase.co';
+const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_IVWNe_8YmgLmaXUHOymn1Q_t7Kso8Bd';
 const PAYMENT_UPI_ID = 'jinwoo40054@kphdfc';
 
-const supabase = createClient(
-  SUPABASE_URL,
-  SUPABASE_PUBLISHABLE_KEY
-);
-
+const supabase = createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
 const $ = id => document.getElementById(id);
 const params = new URLSearchParams(location.search);
 const listingId = params.get('listing_id');
@@ -308,9 +265,7 @@ let orderCreationInProgress = false;
 
 function money(value) {
   return new Intl.NumberFormat('en-IN', {
-    style: 'currency',
-    currency: 'INR',
-    maximumFractionDigits: 2
+    style: 'currency', currency: 'INR', maximumFractionDigits: 2
   }).format(Number(value));
 }
 
@@ -321,83 +276,52 @@ function status(message, warning = false) {
 
 function selectPaymentMode(mode) {
   const qrSelected = mode === 'qr';
-
   $('qrMode').hidden = !qrSelected;
   $('upiMode').hidden = qrSelected;
-
   $('qrTab').classList.toggle('active', qrSelected);
   $('upiTab').classList.toggle('active', !qrSelected);
-
   $('qrTab').setAttribute('aria-pressed', String(qrSelected));
   $('upiTab').setAttribute('aria-pressed', String(!qrSelected));
 }
 
-$('qrTab').addEventListener('click', () => {
-  selectPaymentMode('qr');
-});
-
-$('upiTab').addEventListener('click', () => {
-  selectPaymentMode('upi');
-});
-
+$('qrTab').addEventListener('click', () => selectPaymentMode('qr'));
+$('upiTab').addEventListener('click', () => selectPaymentMode('upi'));
 selectPaymentMode('qr');
 
 async function init() {
   if (!listingId || !/^\d+$/.test(listingId)) {
-    status(
-      'Missing or invalid listing ID. Return to the Vault and tap Buy Now again.',
-      true
-    );
+    status('Missing or invalid listing ID. Return to the Vault and tap Buy Now again.', true);
     return;
   }
 
-  const {
-    data: { session },
-    error: sessionError
-  } = await supabase.auth.getSession();
+  const { data: { session }, error: sessionError } = await supabase.auth.getSession();
 
   if (sessionError || !session) {
     status('Please sign in first. Opening login page…', true);
-
     setTimeout(() => {
-      location.replace(
-        'login.html?next=' +
-        encodeURIComponent(location.pathname + location.search)
-      );
+      location.replace('login.html?next=' + encodeURIComponent(location.pathname + location.search));
     }, 900);
-
     return;
   }
 
   user = session.user;
+  $('accountEmail').textContent = user.email || 'Signed-in user';
 
-  $('accountEmail').textContent =
-    user.email || 'Signed-in user';
-
-  const {
-    data: control,
-    error: controlError
-  } = await supabase
+  const { data: control, error: controlError } = await supabase
     .from('customer_account_controls')
     .select('status,admin_note')
     .eq('user_id', user.id)
     .maybeSingle();
 
   if (controlError) {
-    status(
-      'Account policy status could not be verified. Please contact support.',
-      true
-    );
+    status('Account policy status could not be verified. Please contact support.', true);
     $('createOrderBtn').disabled = true;
     return;
   }
 
   if (control?.status === 'banned') {
-    status(
-      'This account is restricted from creating orders. ' +
-      (control.admin_note || 'Please contact official support.'),
-      true
-    );
+    status('This account is restricted from creating orders. ' +
+      (control.admin_note || 'Please contact official support.'), true);
     $('createOrderBtn').disabled = true;
     return;
   }
@@ -411,45 +335,28 @@ async function init() {
 
   if (error || !data) {
     console.error(error);
-    status(
-      'This listing is unavailable or could not be loaded. Return to the Vault and try again.',
-      true
-    );
+    status('This listing is unavailable or could not be loaded. Return to the Vault and try again.', true);
     return;
   }
 
   listing = data;
 
-  if (
-    listing.price === null ||
-    listing.price === undefined ||
-    !Number.isFinite(Number(listing.price)) ||
-    Number(listing.price) <= 0
-  ) {
-    status(
-      'This listing does not have a valid price. Please contact support.',
-      true
-    );
+  if (listing.price == null || !Number.isFinite(Number(listing.price)) || Number(listing.price) <= 0) {
+    status('This listing does not have a valid price. Please contact support.', true);
     return;
   }
 
-  $('listingTitle').textContent =
-    listing.title || ('Vault listing #' + listing.id);
-
+  $('listingTitle').textContent = listing.title || ('Vault listing #' + listing.id);
   $('listingPrice').textContent = money(listing.price);
   $('listingId').textContent = String(listing.id);
   $('listingPanel').hidden = false;
-
-  status(
-    'Listing verified. The database must validate the final order amount.'
-  );
+  status('Listing verified. The database must validate the final order amount.');
 }
 
 $('createOrderBtn').addEventListener('click', async () => {
   if (!user || !listing || orderCreationInProgress) return;
 
   orderCreationInProgress = true;
-
   const button = $('createOrderBtn');
   button.disabled = true;
   button.textContent = 'CREATING ORDER…';
@@ -472,12 +379,7 @@ $('createOrderBtn').addEventListener('click', async () => {
 
     order = data;
 
-    if (
-      !order ||
-      !order.id ||
-      !Number.isFinite(Number(order.amount)) ||
-      Number(order.amount) <= 0
-    ) {
+    if (!order?.id || !Number.isFinite(Number(order.amount)) || Number(order.amount) <= 0) {
       throw new Error('The database returned invalid order details.');
     }
 
@@ -485,41 +387,23 @@ $('createOrderBtn').addEventListener('click', async () => {
     $('payAmount').textContent = money(order.amount);
     $('upiIdText').textContent = PAYMENT_UPI_ID;
 
-    const amount = Number(order.amount).toFixed(2);
-    const note = 'NEXVORA Vault Order ' + order.id;
-
     const upiParams = new URLSearchParams({
       pa: PAYMENT_UPI_ID,
       pn: 'NEXVORA',
-      am: amount,
+      am: Number(order.amount).toFixed(2),
       cu: 'INR',
-      tn: note
+      tn: 'NEXVORA Vault Order ' + order.id
     });
 
     const upiUri = 'upi://pay?' + upiParams.toString();
-
     $('payViaUpi').href = upiUri;
     $('payViaUpi').setAttribute('aria-disabled', 'false');
-    $('payViaUpi').textContent =
-      'OPEN UPI APP · ' + money(order.amount);
-
-    $('payViaUpi').setAttribute(
-      'aria-label',
-      'Pay ' + money(order.amount) + ' via UPI app'
-    );
+    $('payViaUpi').textContent = 'OPEN UPI APP · ' + money(order.amount);
+    $('payViaUpi').setAttribute('aria-label', 'Pay ' + money(order.amount) + ' via UPI app');
 
     $('dynamicQr').hidden = true;
     $('qrLoading').hidden = false;
     $('qrLoading').textContent = 'Generating payment QR…';
-
-    /*
-      QR content is the order-specific UPI payment URI.
-      This QR image service is external; do not send payment secrets
-      or private customer information in QR requests.
-    */
-    const qrUrl =
-      'https://api.qrserver.com/v1/create-qr-code/?size=320x320&data=' +
-      encodeURIComponent(upiUri);
 
     $('dynamicQr').onload = () => {
       $('dynamicQr').hidden = false;
@@ -529,11 +413,12 @@ $('createOrderBtn').addEventListener('click', async () => {
     $('dynamicQr').onerror = () => {
       $('dynamicQr').hidden = true;
       $('qrLoading').hidden = false;
-      $('qrLoading').textContent =
-        'QR could not load. Select Pay with UPI App or retry later.';
+      $('qrLoading').textContent = 'QR could not load. Select Pay with UPI App or retry later.';
     };
 
-    $('dynamicQr').src = qrUrl;
+    $('dynamicQr').src =
+      'https://api.qrserver.com/v1/create-qr-code/?size=320x320&data=' +
+      encodeURIComponent(upiUri);
 
     $('paymentInstructions').classList.remove('warning');
     $('paymentInstructions').textContent =
@@ -542,20 +427,12 @@ $('createOrderBtn').addEventListener('click', async () => {
     $('upiArea').hidden = false;
     $('paymentPanel').hidden = false;
     $('listingPanel').hidden = true;
-
     selectPaymentMode('qr');
 
-    status(
-      'Order created. Order #' + order.id +
-      ' is awaiting payment verification.'
-    );
+    status('Order created. Order #' + order.id + ' is awaiting payment verification.');
   } catch (error) {
     console.error(error);
-    status(
-      'Could not create the order: ' +
-      (error.message || 'Please retry or contact support.'),
-      true
-    );
+    status('Could not create the order: ' + (error.message || 'Please retry or contact support.'), true);
   } finally {
     orderCreationInProgress = false;
     button.disabled = false;
@@ -565,19 +442,13 @@ $('createOrderBtn').addEventListener('click', async () => {
 
 $('proofForm').addEventListener('submit', async event => {
   event.preventDefault();
-
-  if (!order || !user || !PAYMENT_UPI_ID.trim() || submittingProof) {
-    return;
-  }
+  if (!order || !user || !PAYMENT_UPI_ID.trim() || submittingProof) return;
 
   const utr = $('utr').value.trim();
   const button = $('submitProofBtn');
 
   if (!/^[A-Za-z0-9-]{8,22}$/.test(utr)) {
-    status(
-      'Enter a transaction reference between 8 and 22 letters, numbers or hyphens.',
-      true
-    );
+    status('Enter a transaction reference between 8 and 22 letters, numbers or hyphens.', true);
     $('utr').focus();
     return;
   }
@@ -587,14 +458,7 @@ $('proofForm').addEventListener('submit', async event => {
   button.textContent = 'SUBMITTING UTR…';
 
   try {
-    /*
-      Check for an existing reference on this order.
-      Actual transaction verification still requires admin/ledger review.
-    */
-    const {
-      data: existing,
-      error: checkError
-    } = await supabase
+    const { data: existing, error: checkError } = await supabase
       .from('payment_submissions')
       .select('id,status')
       .eq('order_id', order.id)
@@ -602,12 +466,7 @@ $('proofForm').addEventListener('submit', async event => {
       .limit(1);
 
     if (checkError) throw checkError;
-
-    if (existing && existing.length > 0) {
-      throw new Error(
-        'This UTR has already been submitted for this order.'
-      );
-    }
+    if (existing?.length) throw new Error('This UTR has already been submitted for this order.');
 
     const { error: insertError } = await supabase
       .from('payment_submissions')
@@ -625,24 +484,15 @@ $('proofForm').addEventListener('submit', async event => {
 
     $('doneText').textContent =
       'UTR for order #' + order.id +
-      ' was submitted successfully. Status: pending admin verification. ' +
-      'Payment has not yet been approved.';
+      ' was submitted successfully. Status: pending admin verification. Payment has not yet been approved.';
 
     $('paymentPanel').hidden = true;
     $('donePanel').hidden = false;
-
     status('UTR submitted for admin verification.');
-    $('donePanel').scrollIntoView({
-      behavior: 'smooth',
-      block: 'start'
-    });
+    $('donePanel').scrollIntoView({ behavior: 'smooth', block: 'start' });
   } catch (error) {
     console.error(error);
-    status(
-      'UTR submission failed: ' +
-      (error.message || 'Please retry or contact support.'),
-      true
-    );
+    status('UTR submission failed: ' + (error.message || 'Please retry or contact support.'), true);
   } finally {
     submittingProof = false;
     button.disabled = false;
@@ -652,11 +502,9 @@ $('proofForm').addEventListener('submit', async event => {
 
 init().catch(error => {
   console.error(error);
-  status(
-    'Unable to initialize payment page. Please reload or contact support.',
-    true
-  );
+  status('Unable to initialize payment page. Please reload or contact support.', true);
 });
 </script>
 </body>
- </html>
+  </html>
+  
