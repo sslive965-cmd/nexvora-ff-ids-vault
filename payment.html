@@ -1,59 +1,662 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="theme-color" content="#050805">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#050805">
 <title>NEXVORA | Secure Payment</title>
+<link rel="stylesheet" href="nexvora-elite.css?v=1">
+
 <style>
-:root{--bg:#050805;--panel:#0b120c;--green:#39ff78;--soft:#a0ffb7;--muted:#78a985;--line:#39ff7835}*{box-sizing:border-box}body{margin:0;min-height:100vh;background:radial-gradient(ellipse at top,#102a17,transparent 45%),var(--bg);color:var(--soft);font-family:Arial,sans-serif}header{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:18px 16px;border-bottom:1px solid #39ff782b;background:#050805ed}.brand{font-weight:900;letter-spacing:3px;font-size:19px;color:var(--green)}.back{border:1px solid #39ff7840;border-radius:5px;padding:10px 12px;background:#0b120c;color:var(--green);text-decoration:none;font-size:12px}main{width:min(680px,100%);margin:auto;padding:25px 15px 45px}.panel{border:1px solid var(--line);border-radius:10px;background:linear-gradient(150deg,#0c170e,#060a07);padding:20px;margin-bottom:14px;box-shadow:0 8px 24px #0004}.eyebrow{font-size:10px;letter-spacing:3px;color:var(--green)}h1{font-size:clamp(25px,6vw,36px);color:var(--green);margin:12px 0}h2{font-size:16px;color:var(--green);margin:0 0 14px}p{font-size:13px;line-height:1.75;color:var(--muted)}.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}.field{border:1px solid #39ff7835;background:#050b06;border-radius:5px;padding:12px;min-width:0}.field span{display:block;color:var(--muted);font-size:10px;letter-spacing:1px;margin-bottom:7px}.field strong{font-size:14px;overflow-wrap:anywhere;color:var(--soft)}label{display:block;font-size:11px;color:var(--soft);margin:14px 0 7px}input,textarea{width:100%;border:1px solid #39ff7840;border-radius:5px;background:#050b06;color:var(--soft);padding:12px;font:inherit;font-size:13px}input[type=file]{font-size:11px}button{width:100%;border:1px solid #39ff7855;border-radius:5px;background:var(--green);color:#031006;padding:13px;font-weight:800;letter-spacing:1px;cursor:pointer;margin-top:14px}button:disabled{opacity:.5;cursor:not-allowed}.notice{border:1px solid #39ff7840;border-radius:6px;padding:12px;color:var(--muted);font-size:12px;line-height:1.7;overflow-wrap:anywhere}.warning{border-color:#b58b36;color:#e9d6a1}.success{color:var(--green)}[hidden]{display:none!important}footer{text-align:center;padding:20px;color:#52795c;font-size:10px;letter-spacing:2px}@media(max-width:440px){.grid{grid-template-columns:1fr}.panel{padding:16px}}
-</style>  <link rel="stylesheet" href="nexvora-elite.css?v=1">
+:root{
+  --bg:#050805;
+  --panel:#0b120c;
+  --green:#39ff78;
+  --soft:#a0ffb7;
+  --muted:#78a985;
+  --line:#39ff7835;
+}
+*{box-sizing:border-box}
+body{
+  margin:0;
+  min-height:100vh;
+  background:radial-gradient(ellipse at top,#102a17,transparent 45%),var(--bg);
+  color:var(--soft);
+  font-family:Arial,sans-serif;
+}
+header{
+  display:flex;align-items:center;justify-content:space-between;
+  gap:12px;padding:18px 16px;border-bottom:1px solid #39ff782b;
+  background:#050805ed;
+}
+.brand{font-weight:900;letter-spacing:3px;font-size:19px;color:var(--green)}
+.back{
+  display:inline-block;border:1px solid #39ff7840;border-radius:6px;
+  padding:11px 12px;background:#0b120c;color:var(--green);
+  text-decoration:none;font-size:12px;text-align:center;
+}
+main{width:min(680px,100%);margin:auto;padding:25px 15px 45px}
+.panel{
+  border:1px solid var(--line);border-radius:12px;
+  background:linear-gradient(150deg,#0c170e,#060a07);
+  padding:20px;margin-bottom:14px;box-shadow:0 8px 24px #0004;
+}
+.eyebrow{font-size:10px;letter-spacing:3px;color:var(--green)}
+h1{font-size:clamp(25px,6vw,36px);color:var(--green);margin:12px 0}
+h2{font-size:16px;color:var(--green);margin:0 0 14px}
+p{font-size:13px;line-height:1.75;color:var(--muted)}
+.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
+.field{
+  border:1px solid #39ff7835;background:#050b06;
+  border-radius:7px;padding:12px;min-width:0;
+}
+.field span{
+  display:block;color:var(--muted);font-size:10px;
+  letter-spacing:1px;margin-bottom:7px;
+}
+.field strong{font-size:14px;overflow-wrap:anywhere;color:var(--soft)}
+label{display:block;font-size:11px;color:var(--soft);margin:14px 0 7px}
+input{
+  width:100%;border:1px solid #39ff7840;border-radius:7px;
+  background:#050b06;color:var(--soft);padding:14px;
+  font:inherit;font-size:14px;outline:none;
+}
+input:focus{border-color:var(--green);box-shadow:0 0 0 2px #39ff7818}
+button{
+  width:100%;border:1px solid #39ff7855;border-radius:7px;
+  background:var(--green);color:#031006;padding:14px;
+  font-weight:800;letter-spacing:.5px;cursor:pointer;margin-top:14px;
+}
+button:disabled{opacity:.5;cursor:not-allowed}
+.notice{
+  border:1px solid #39ff7840;border-radius:7px;
+  padding:12px;color:var(--muted);font-size:12px;
+  line-height:1.7;overflow-wrap:anywhere;
+}
+.warning{border-color:#b58b36;color:#e9d6a1}
+.success{color:var(--green)}
+[hidden]{display:none!important}
+
+.payment-tabs{
+  display:grid;grid-template-columns:1fr 1fr;gap:5px;
+  padding:5px;border:1px solid #ffffff15;
+  background:#080a08;border-radius:12px;margin:16px 0;
+}
+.payment-tab{
+  margin:0;min-height:54px;padding:12px 7px;
+  background:transparent;color:#8c968e;
+  border:1px solid transparent;border-radius:8px;
+  font-size:12px;letter-spacing:0;
+}
+.payment-tab.active{
+  background:linear-gradient(110deg,#a52bff,#e22bf4);
+  color:white;border-color:#e95aff;
+  box-shadow:0 0 20px #d32aff30;
+}
+.payment-content{
+  border:1px solid #ffffff13;background:#0b0b0d;
+  border-radius:12px;padding:16px;margin-bottom:14px;
+}
+.qr-frame{
+  display:flex;align-items:center;justify-content:center;
+  padding:15px;background:#101012;border:1px solid #ffffff18;
+  border-radius:12px;margin:12px auto;width:min(100%,340px);
+}
+#dynamicQr{
+  display:block;width:100%;max-width:290px;aspect-ratio:1;
+  object-fit:contain;background:#fff;padding:7px;border-radius:9px;
+}
+.qr-caption{text-align:center;margin:10px 0 2px}
+.upi-launch{
+  display:flex;align-items:center;justify-content:center;gap:10px;
+  text-decoration:none;background:var(--green);color:#031006;
+  padding:16px;border-radius:8px;font-weight:900;
+  text-align:center;margin-top:12px;
+}
+.upi-launch[aria-disabled="true"]{opacity:.5;pointer-events:none}
+.method-caption{text-align:center;font-size:12px;color:var(--muted)}
+.order-ref{margin-top:14px}
+footer{
+  text-align:center;padding:20px;color:#52795c;
+  font-size:10px;letter-spacing:2px;
+}
+#donePanel{animation:appear .4s ease-out}
+.spinner{
+  width:35px;height:35px;border:3px solid #39ff7830;
+  border-top-color:var(--green);border-radius:50%;
+  animation:spin .8s linear infinite;margin:12px auto;
+}
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes appear{
+  from{opacity:0;transform:translateY(10px)}
+  to{opacity:1;transform:translateY(0)}
+}
+@media(max-width:440px){
+  .grid{grid-template-columns:1fr}
+  .panel{padding:16px}
+  .payment-content{padding:12px}
+  .payment-tab{font-size:11px}
+}
+</style>
 </head>
+
 <body>
-<header><div class="brand">NEXVORA</div><a class="back" href="vault.html">← BACK TO VAULT</a></header>
-<main><section class="panel"><div class="eyebrow">◆ VAULT CHECKOUT</div><h1>SECURE PAYMENT</h1><p>Confirm the selected listing, create an order, pay the exact amount, then submit your UTR. Your order remains pending until an admin checks the transaction in the payment ledger.</p><div id="status" class="notice" role="status" aria-live="polite">Checking your session and listing…</div></section>
-<section class="panel" id="listingPanel" hidden><h2>ORDER SUMMARY</h2><div class="grid"><div class="field"><span>LISTING</span><strong id="listingTitle">—</strong></div><div class="field"><span>AMOUNT</span><strong id="listingPrice">—</strong></div><div class="field"><span>LISTING ID</span><strong id="listingId">—</strong></div><div class="field"><span>ACCOUNT</span><strong id="accountEmail">—</strong></div></div><button id="createOrderBtn" type="button">CREATE ORDER</button></section>
-<section class="panel" id="paymentPanel" hidden><h2>PAYMENT INSTRUCTIONS</h2><div id="paymentInstructions" class="notice warning">Payment details have not been configured yet. Do not send money until the official payment details appear here.</div><div id="upiArea" hidden><div class="grid" style="margin-top:10px"><div class="field"><span>PAY TO UPI ID</span><strong id="upiIdText"></strong></div><div class="field"><span>EXACT AMOUNT</span><strong id="payAmount"></strong></div></div><div id="dynamicQrWrap" class="field" style="margin-top:14px;text-align:center"><span>SCAN TO PAY EXACT AMOUNT</span><img id="dynamicQr" alt="UPI QR with exact order amount" style="display:block;width:min(280px,100%);margin:10px auto;background:#fff;padding:8px;border-radius:6px"><p id="qrCaption">QR is generated for this order amount.</p></div><a id="payViaUpi" class="back" href="#" style="display:block;text-align:center;margin-top:12px">PAY VIA UPI APP</a><p>Confirm the amount shown in your UPI app before paying. Payment is not automatically verified. After payment, enter the UTR. An admin will verify it against the actual transaction record before approval.</p><div class="field"><span>ORDER NUMBER</span><strong id="orderNumber"></strong></div><form id="proofForm"><label for="utr">UPI transaction reference / UTR *</label><input id="utr" name="utr" maxlength="100" required autocomplete="off" placeholder="Enter transaction reference"><button id="submitProofBtn" type="submit">SUBMIT UTR FOR VERIFICATION</button></form></div></section>
-<section class="panel" id="donePanel" hidden><h2>UTR SUBMITTED</h2><div class="notice success" id="doneText">Your UTR was submitted for admin review.</div><p>Keep your transaction reference. Do not pay again for the same order unless support confirms it.</p><a class="back" href="vault.html">RETURN TO VAULT</a></section>
-</main><footer>NEXVORA FF IDs VAULT · UTR VERIFICATION REQUIRED</footer>
+<header>
+  <div class="brand">NEXVORA</div>
+  <a class="back" href="vault.html">← BACK TO VAULT</a>
+</header>
+
+<main>
+  <section class="panel">
+    <div class="eyebrow">◆ VAULT CHECKOUT</div>
+    <h1>SECURE PAYMENT</h1>
+    <p>
+      Confirm the selected listing, create an order, and pay the exact
+      amount. Your payment remains pending until an admin verifies
+      the transaction reference.
+    </p>
+    <div id="status" class="notice" role="status" aria-live="polite">
+      Checking your session and listing…
+    </div>
+  </section>
+
+  <section class="panel" id="listingPanel" hidden>
+    <h2>ORDER SUMMARY</h2>
+    <div class="grid">
+      <div class="field">
+        <span>LISTING</span>
+        <strong id="listingTitle">—</strong>
+      </div>
+      <div class="field">
+        <span>AMOUNT</span>
+        <strong id="listingPrice">—</strong>
+      </div>
+      <div class="field">
+        <span>LISTING ID</span>
+        <strong id="listingId">—</strong>
+      </div>
+      <div class="field">
+        <span>ACCOUNT</span>
+        <strong id="accountEmail">—</strong>
+      </div>
+    </div>
+    <button id="createOrderBtn" type="button">CREATE ORDER</button>
+  </section>
+
+  <section class="panel" id="paymentPanel" hidden>
+    <h2>PAYMENT DETAILS</h2>
+
+    <div id="paymentInstructions" class="notice warning">
+      Preparing official payment details…
+    </div>
+
+    <div id="upiArea" hidden>
+      <div class="grid" style="margin-top:12px">
+        <div class="field">
+          <span>PAY TO UPI ID</span>
+          <strong id="upiIdText"></strong>
+        </div>
+        <div class="field">
+          <span>EXACT ORDER AMOUNT</span>
+          <strong id="payAmount"></strong>
+        </div>
+      </div>
+
+      <div class="payment-tabs" role="group" aria-label="Payment method">
+        <button class="payment-tab active" id="qrTab"
+          type="button" aria-pressed="true">
+          ▦ &nbsp; Scan QR Code
+        </button>
+        <button class="payment-tab" id="upiTab"
+          type="button" aria-pressed="false">
+          ▯ &nbsp; Pay with UPI App
+        </button>
+      </div>
+
+      <div id="qrMode" class="payment-content">
+        <h2 style="text-align:center">SCAN QR CODE</h2>
+        <div class="qr-frame">
+          <img id="dynamicQr" alt="UPI payment QR code" hidden>
+          <div id="qrLoading" class="notice">Generating payment QR…</div>
+        </div>
+        <p id="qrCaption" class="qr-caption">
+          Scan with your UPI app and verify the amount before paying.
+        </p>
+      </div>
+
+      <div id="upiMode" class="payment-content" hidden>
+        <h2>PAY WITH UPI APP</h2>
+        <p>
+          Tap the button below to open an installed UPI app that supports
+          payment links. Confirm the receiver and amount in that app.
+        </p>
+        <a id="payViaUpi" class="upi-launch" href="#"
+          aria-disabled="true">
+          OPEN UPI APP
+        </a>
+        <div class="notice" style="margin-top:12px">
+          If no UPI app opens, return to QR Code and scan it with your
+          preferred payment app.
+        </div>
+      </div>
+
+      <div class="notice order-ref">
+        <span>ORDER NUMBER</span>
+        <strong id="orderNumber">—</strong>
+      </div>
+
+      <p>
+        After paying, enter the transaction reference below. Submitting
+        a UTR does not itself prove that payment succeeded. An admin must
+        verify the transaction.
+      </p>
+
+      <form id="proofForm">
+        <label for="utr">UPI TRANSACTION REFERENCE / UTR *</label>
+        <input id="utr" name="utr" maxlength="100"
+          required autocomplete="off"
+          placeholder="Enter UTR / Transaction ID">
+        <button id="submitProofBtn" type="submit">
+          SUBMIT UTR FOR VERIFICATION
+        </button>
+      </form>
+    </div>
+  </section>
+
+  <section class="panel" id="donePanel" hidden>
+    <div class="spinner"></div>
+    <h2>UTR SUBMITTED</h2>
+    <div class="notice success" id="doneText">
+      Your UTR was submitted for admin review.
+    </div>
+    <p>
+      Your payment is not approved yet. Keep your transaction reference
+      and check your order status later.
+    </p>
+    <a class="back" href="vault.html">RETURN TO VAULT</a>
+  </section>
+</main>
+
+<footer>NEXVORA FF IDs VAULT · UTR VERIFICATION REQUIRED</footer>
+
 <script type="module">
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
-const SUPABASE_URL='https://eggcveabpqldhcpzcmcr.supabase.co';
-const SUPABASE_PUBLISHABLE_KEY='sb_publishable_IVWNe_8YmgLmaXUHOymn1Q_t7Kso8Bd';
-// Configure these official payment details before accepting customer payments.
-const PAYMENT_UPI_ID='jinwoo40054@kphdfc';
-const PAYMENT_QR_IMAGE_URL=''; // Dynamic order-specific QR is generated from the UPI ID and verified order amount.
-const supabase=createClient(SUPABASE_URL,SUPABASE_PUBLISHABLE_KEY);
-const $=id=>document.getElementById(id);const params=new URLSearchParams(location.search);const listingId=params.get('listing_id');let user=null,listing=null,order=null;
-function money(v){return new Intl.NumberFormat('en-IN',{style:'currency',currency:'INR',maximumFractionDigits:2}).format(Number(v));}
-function status(message,warning=false){$('status').textContent=message;$('status').classList.toggle('warning',warning)}
-async function init(){if(!listingId||!/^\d+$/.test(listingId)){status('Missing or invalid listing ID. Return to the Vault and tap Buy Now again.',true);return;}const {data:{session},error:sessionError}=await supabase.auth.getSession();if(sessionError||!session){status('Please sign in first. Opening login page…',true);setTimeout(()=>location.replace('login.html?next='+encodeURIComponent(location.pathname+location.search)),900);return;}user=session.user;$('accountEmail').textContent=user.email||'Signed-in user';const {data:control, error:controlError}=await supabase.from('customer_account_controls').select('status,admin_note').eq('user_id',user.id).maybeSingle();if(controlError){status('Account policy status could not be verified. Please contact support before proceeding.',true);$('createOrderBtn').disabled=true;return;}if(control?.status==='banned'){status('This account is restricted from creating orders. '+(control.admin_note||'Please contact official support if you believe this is a mistake.'),true);$('createOrderBtn').disabled=true;return;}const {data,error}=await supabase.from('vault_listings').select('id,title,price,status').eq('id',listingId).eq('status','active').maybeSingle();if(error||!data){console.error(error);status('This listing is unavailable or could not be loaded. Return to the Vault and try again.',true);return;}listing=data;if(listing.price===null||listing.price===undefined||!Number.isFinite(Number(listing.price))){status('This listing does not have a fixed price yet. Please contact support.',true);return;}$('listingTitle').textContent=listing.title||('Vault listing #'+listing.id);$('listingPrice').textContent=money(listing.price);$('listingId').textContent=String(listing.id);$('listingPanel').hidden=false;status('Listing verified. The amount will be checked again by the database when the order is created.');}
-$('createOrderBtn').addEventListener('click',async()=>{const b=$('createOrderBtn');b.disabled=true;b.textContent='CREATING ORDER…';try{const {data,error}=await supabase.from('orders').insert({user_id:user.id,listing_id:listing.id,listing_title:listing.title||'FF Vault Listing',amount:Number(listing.price),status:'pending',customer_email:user.email||null}).select('id,amount,listing_title,status').single();if(error)throw error;order=data;$('paymentPanel').hidden=false;$('orderNumber').textContent='#'+order.id;$('payAmount').textContent=money(order.amount);if(PAYMENT_UPI_ID.trim()){$('upiIdText').textContent=PAYMENT_UPI_ID.trim();$('paymentInstructions').classList.remove('warning');$('paymentInstructions').textContent='Order-specific UPI payment details are ready. Verify the receiver and exact amount in your UPI app before authorizing payment.';$('upiArea').hidden=false;const amount=Number(order.amount).toFixed(2);const note='NEXVORA Vault Order '+order.id;const upiParams=new URLSearchParams({pa:PAYMENT_UPI_ID.trim(),pn:'NEXVORA',am:amount,cu:'INR',tn:note});const upiUri='upi://pay?'+upiParams.toString();$('dynamicQr').src='https://api.qrserver.com/v1/create-qr-code/?size=320x320&data='+encodeURIComponent(upiUri);$('payViaUpi').href=upiUri;$('payViaUpi').setAttribute('aria-label','Pay '+money(order.amount)+' via UPI app');$('payViaUpi').textContent='PAY '+money(order.amount)+' VIA UPI APP';if(PAYMENT_QR_IMAGE_URL.trim()&&/^https:\/\//i.test(PAYMENT_QR_IMAGE_URL.trim())){const img=document.createElement('img');img.src=PAYMENT_QR_IMAGE_URL.trim();img.alt='Additional official QR';img.style='display:block;max-width:220px;width:100%;margin:14px auto;border:1px solid #39ff7840;border-radius:6px';$('paymentInstructions').after(img);}}else{$('paymentInstructions').textContent='Order #'+order.id+' has been created, but the official UPI ID/QR is not configured in payment.html yet. Do not send money. The payment proof form remains disabled until official payment details are added.';const f=$('proofForm');f.querySelectorAll('input,button').forEach(x=>x.disabled=true);}$('createOrderBtn').hidden=true;status('Order created successfully. Order #'+order.id+' is pending payment review.');}catch(e){console.error(e);status('Could not create the order: '+(e.message||'Please try again. If this repeats, contact support.'),true);}finally{b.disabled=false;b.textContent='CREATE ORDER';}});
-$('proofForm').addEventListener('submit',async e=>{
- e.preventDefault();
- if(!order||!PAYMENT_UPI_ID.trim())return;
- const utr=$('utr').value.trim(),b=$('submitProofBtn');
- if(!utr){status('Enter the UPI transaction reference / UTR.',true);return;}
- if(!/^[A-Za-z0-9-]{6,100}$/.test(utr)){status('Enter a valid UTR/reference (6–100 letters, numbers or hyphens).',true);return;}
- b.disabled=true;b.textContent='SUBMITTING UTR…';
- try{
-  // Block resubmitting the same UTR for this order. Admin must still verify it against the actual ledger.
-  const {data:existing,error:checkError}=await supabase.from('payment_submissions').select('id,status').eq('order_id',order.id).eq('transaction_reference',utr).limit(1);
-  if(checkError)throw checkError;
-  if(existing&&existing.length){throw new Error('This UTR has already been submitted for this order.');}
-  const {error:insertError}=await supabase.from('payment_submissions').insert({
-   order_id:order.id,
-   user_id:user.id,
-   payment_method:'UPI',
-   transaction_reference:utr,
-   screenshot_url:null,
-   amount:Number(order.amount),
-   status:'pending'
-  });
-  if(insertError)throw insertError;
-  $('doneText').textContent=`UTR for order #${order.id} was submitted. Status: pending admin verification. This is not confirmation that payment has been approved.`;
-  $('donePanel').hidden=false;$('paymentPanel').hidden=true;
-  status('UTR submitted for admin verification.');
- }catch(err){console.error(err);status('UTR submission failed: '+(err.message||'Please retry or contact support.'),true);}
- finally{b.disabled=false;b.textContent='SUBMIT UTR FOR VERIFICATION';}
+import { createClient } from
+  'https://esm.sh/@supabase/supabase-js@2';
+
+const SUPABASE_URL =
+  'https://eggcveabpqldhcpzcmcr.supabase.co';
+
+const SUPABASE_PUBLISHABLE_KEY =
+  'sb_publishable_IVWNe_8YmgLmaXUHOymn1Q_t7Kso8Bd';
+
+const PAYMENT_UPI_ID = 'jinwoo40054@kphdfc';
+
+const supabase = createClient(
+  SUPABASE_URL,
+  SUPABASE_PUBLISHABLE_KEY
+);
+
+const $ = id => document.getElementById(id);
+const params = new URLSearchParams(location.search);
+const listingId = params.get('listing_id');
+
+let user = null;
+let listing = null;
+let order = null;
+let submittingProof = false;
+let orderCreationInProgress = false;
+
+function money(value) {
+  return new Intl.NumberFormat('en-IN', {
+    style: 'currency',
+    currency: 'INR',
+    maximumFractionDigits: 2
+  }).format(Number(value));
+}
+
+function status(message, warning = false) {
+  $('status').textContent = message;
+  $('status').classList.toggle('warning', warning);
+}
+
+function selectPaymentMode(mode) {
+  const qrSelected = mode === 'qr';
+
+  $('qrMode').hidden = !qrSelected;
+  $('upiMode').hidden = qrSelected;
+
+  $('qrTab').classList.toggle('active', qrSelected);
+  $('upiTab').classList.toggle('active', !qrSelected);
+
+  $('qrTab').setAttribute('aria-pressed', String(qrSelected));
+  $('upiTab').setAttribute('aria-pressed', String(!qrSelected));
+}
+
+$('qrTab').addEventListener('click', () => {
+  selectPaymentMode('qr');
 });
-init();
-</script></body></html>
+
+$('upiTab').addEventListener('click', () => {
+  selectPaymentMode('upi');
+});
+
+selectPaymentMode('qr');
+
+async function init() {
+  if (!listingId || !/^\d+$/.test(listingId)) {
+    status(
+      'Missing or invalid listing ID. Return to the Vault and tap Buy Now again.',
+      true
+    );
+    return;
+  }
+
+  const {
+    data: { session },
+    error: sessionError
+  } = await supabase.auth.getSession();
+
+  if (sessionError || !session) {
+    status('Please sign in first. Opening login page…', true);
+
+    setTimeout(() => {
+      location.replace(
+        'login.html?next=' +
+        encodeURIComponent(location.pathname + location.search)
+      );
+    }, 900);
+
+    return;
+  }
+
+  user = session.user;
+
+  $('accountEmail').textContent =
+    user.email || 'Signed-in user';
+
+  const {
+    data: control,
+    error: controlError
+  } = await supabase
+    .from('customer_account_controls')
+    .select('status,admin_note')
+    .eq('user_id', user.id)
+    .maybeSingle();
+
+  if (controlError) {
+    status(
+      'Account policy status could not be verified. Please contact support.',
+      true
+    );
+    $('createOrderBtn').disabled = true;
+    return;
+  }
+
+  if (control?.status === 'banned') {
+    status(
+      'This account is restricted from creating orders. ' +
+      (control.admin_note || 'Please contact official support.'),
+      true
+    );
+    $('createOrderBtn').disabled = true;
+    return;
+  }
+
+  const { data, error } = await supabase
+    .from('vault_listings')
+    .select('id,title,price,status')
+    .eq('id', listingId)
+    .eq('status', 'active')
+    .maybeSingle();
+
+  if (error || !data) {
+    console.error(error);
+    status(
+      'This listing is unavailable or could not be loaded. Return to the Vault and try again.',
+      true
+    );
+    return;
+  }
+
+  listing = data;
+
+  if (
+    listing.price === null ||
+    listing.price === undefined ||
+    !Number.isFinite(Number(listing.price)) ||
+    Number(listing.price) <= 0
+  ) {
+    status(
+      'This listing does not have a valid price. Please contact support.',
+      true
+    );
+    return;
+  }
+
+  $('listingTitle').textContent =
+    listing.title || ('Vault listing #' + listing.id);
+
+  $('listingPrice').textContent = money(listing.price);
+  $('listingId').textContent = String(listing.id);
+  $('listingPanel').hidden = false;
+
+  status(
+    'Listing verified. The database must validate the final order amount.'
+  );
+}
+
+$('createOrderBtn').addEventListener('click', async () => {
+  if (!user || !listing || orderCreationInProgress) return;
+
+  orderCreationInProgress = true;
+
+  const button = $('createOrderBtn');
+  button.disabled = true;
+  button.textContent = 'CREATING ORDER…';
+
+  try {
+    const { data, error } = await supabase
+      .from('orders')
+      .insert({
+        user_id: user.id,
+        listing_id: listing.id,
+        listing_title: listing.title || 'FF Vault Listing',
+        amount: Number(listing.price),
+        status: 'pending',
+        customer_email: user.email || null
+      })
+      .select('id,amount,listing_title,status')
+      .single();
+
+    if (error) throw error;
+
+    order = data;
+
+    if (
+      !order ||
+      !order.id ||
+      !Number.isFinite(Number(order.amount)) ||
+      Number(order.amount) <= 0
+    ) {
+      throw new Error('The database returned invalid order details.');
+    }
+
+    $('orderNumber').textContent = '#' + order.id;
+    $('payAmount').textContent = money(order.amount);
+    $('upiIdText').textContent = PAYMENT_UPI_ID;
+
+    const amount = Number(order.amount).toFixed(2);
+    const note = 'NEXVORA Vault Order ' + order.id;
+
+    const upiParams = new URLSearchParams({
+      pa: PAYMENT_UPI_ID,
+      pn: 'NEXVORA',
+      am: amount,
+      cu: 'INR',
+      tn: note
+    });
+
+    const upiUri = 'upi://pay?' + upiParams.toString();
+
+    $('payViaUpi').href = upiUri;
+    $('payViaUpi').setAttribute('aria-disabled', 'false');
+    $('payViaUpi').textContent =
+      'OPEN UPI APP · ' + money(order.amount);
+
+    $('payViaUpi').setAttribute(
+      'aria-label',
+      'Pay ' + money(order.amount) + ' via UPI app'
+    );
+
+    $('dynamicQr').hidden = true;
+    $('qrLoading').hidden = false;
+    $('qrLoading').textContent = 'Generating payment QR…';
+
+    /*
+      QR content is the order-specific UPI payment URI.
+      This QR image service is external; do not send payment secrets
+      or private customer information in QR requests.
+    */
+    const qrUrl =
+      'https://api.qrserver.com/v1/create-qr-code/?size=320x320&data=' +
+      encodeURIComponent(upiUri);
+
+    $('dynamicQr').onload = () => {
+      $('dynamicQr').hidden = false;
+      $('qrLoading').hidden = true;
+    };
+
+    $('dynamicQr').onerror = () => {
+      $('dynamicQr').hidden = true;
+      $('qrLoading').hidden = false;
+      $('qrLoading').textContent =
+        'QR could not load. Select Pay with UPI App or retry later.';
+    };
+
+    $('dynamicQr').src = qrUrl;
+
+    $('paymentInstructions').classList.remove('warning');
+    $('paymentInstructions').textContent =
+      'Payment details are ready. Verify the UPI receiver and exact amount in your payment app before authorizing payment.';
+
+    $('upiArea').hidden = false;
+    $('paymentPanel').hidden = false;
+    $('listingPanel').hidden = true;
+
+    selectPaymentMode('qr');
+
+    status(
+      'Order created. Order #' + order.id +
+      ' is awaiting payment verification.'
+    );
+  } catch (error) {
+    console.error(error);
+    status(
+      'Could not create the order: ' +
+      (error.message || 'Please retry or contact support.'),
+      true
+    );
+  } finally {
+    orderCreationInProgress = false;
+    button.disabled = false;
+    button.textContent = 'CREATE ORDER';
+  }
+});
+
+$('proofForm').addEventListener('submit', async event => {
+  event.preventDefault();
+
+  if (!order || !user || !PAYMENT_UPI_ID.trim() || submittingProof) {
+    return;
+  }
+
+  const utr = $('utr').value.trim();
+  const button = $('submitProofBtn');
+
+  if (!/^[A-Za-z0-9-]{8,22}$/.test(utr)) {
+    status(
+      'Enter a transaction reference between 8 and 22 letters, numbers or hyphens.',
+      true
+    );
+    $('utr').focus();
+    return;
+  }
+
+  submittingProof = true;
+  button.disabled = true;
+  button.textContent = 'SUBMITTING UTR…';
+
+  try {
+    /*
+      Check for an existing reference on this order.
+      Actual transaction verification still requires admin/ledger review.
+    */
+    const {
+      data: existing,
+      error: checkError
+    } = await supabase
+      .from('payment_submissions')
+      .select('id,status')
+      .eq('order_id', order.id)
+      .eq('transaction_reference', utr)
+      .limit(1);
+
+    if (checkError) throw checkError;
+
+    if (existing && existing.length > 0) {
+      throw new Error(
+        'This UTR has already been submitted for this order.'
+      );
+    }
+
+    const { error: insertError } = await supabase
+      .from('payment_submissions')
+      .insert({
+        order_id: order.id,
+        user_id: user.id,
+        payment_method: 'UPI',
+        transaction_reference: utr,
+        screenshot_url: null,
+        amount: Number(order.amount),
+        status: 'pending'
+      });
+
+    if (insertError) throw insertError;
+
+    $('doneText').textContent =
+      'UTR for order #' + order.id +
+      ' was submitted successfully. Status: pending admin verification. ' +
+      'Payment has not yet been approved.';
+
+    $('paymentPanel').hidden = true;
+    $('donePanel').hidden = false;
+
+    status('UTR submitted for admin verification.');
+    $('donePanel').scrollIntoView({
+      behavior: 'smooth',
+      block: 'start'
+    });
+  } catch (error) {
+    console.error(error);
+    status(
+      'UTR submission failed: ' +
+      (error.message || 'Please retry or contact support.'),
+      true
+    );
+  } finally {
+    submittingProof = false;
+    button.disabled = false;
+    button.textContent = 'SUBMIT UTR FOR VERIFICATION';
+  }
+});
+
+init().catch(error => {
+  console.error(error);
+  status(
+    'Unable to initialize payment page. Please reload or contact support.',
+    true
+  );
+});
+</script>
+</body>
+ </html>
