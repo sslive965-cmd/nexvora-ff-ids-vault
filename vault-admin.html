@@ -78,6 +78,7 @@ button{padding:12px 15px;border:1px solid #39ff7840;border-radius:5px;background
       <button class="tab" type="button" data-tab="payments">PAYMENTS</button>
       <button class="tab" type="button" data-tab="refunds">REFUNDS</button>
       <button class="tab" type="button" data-tab="customers">CUSTOMERS</button>
+      <button class="tab" type="button" data-tab="policy">POLICY</button>
     </div>
 
     <div id="sectionContent">
@@ -706,27 +707,33 @@ async function loadCustomers() {
   heading.textContent = 'CUSTOMERS';
   content.appendChild(heading);
 
-  const [profilesResult, rolesResult] = await Promise.all([
+  const [profilesResult, rolesResult, controlsResult] = await Promise.all([
     supabase
       .from('profiles')
       .select('id, username, email, created_at')
       .order('created_at', { ascending: false }),
     supabase
       .from('user_roles')
-      .select('user_id, role')
+      .select('user_id, role'),
+    supabase
+      .from('customer_account_controls')
+      .select('user_id, warning_count, status, admin_note, banned_at')
   ]);
 
-  if (profilesResult.error || rolesResult.error) {
+  if (profilesResult.error || rolesResult.error || controlsResult.error) {
     const error = document.createElement('p');
     error.textContent =
       'Customers load nahi hue: ' +
-      (profilesResult.error?.message || rolesResult.error?.message);
+      (profilesResult.error?.message || rolesResult.error?.message || controlsResult.error?.message);
     content.appendChild(error);
     return;
   }
 
   const roles = new Map(
     (rolesResult.data || []).map(item => [item.user_id, item.role])
+  );
+  const controls = new Map(
+    (controlsResult.data || []).map(item => [item.user_id, item])
   );
 
   if (!profilesResult.data || profilesResult.data.length === 0) {
@@ -740,7 +747,7 @@ async function loadCustomers() {
   table.style.cssText = 'width:100%;border-collapse:collapse';
 
   const header = document.createElement('tr');
-  ['Username', 'Email', 'Role', 'Joined'].forEach(label => {
+  ['Username', 'Email', 'Role', 'Joined', 'Policy status', 'Admin actions'].forEach(label => {
     const th = document.createElement('th');
     th.textContent = label;
     th.style.cssText = 'padding:10px;border-bottom:1px solid #444;text-align:left';
@@ -750,24 +757,70 @@ async function loadCustomers() {
 
   profilesResult.data.forEach(profile => {
     const row = document.createElement('tr');
-    [
-      profile.username || '—',
-      profile.email || '—',
-      roles.get(profile.id) || 'customer',
-      profile.created_at
-        ? new Date(profile.created_at).toLocaleDateString()
-        : '—'
-    ].forEach(value => {
-      const cell = document.createElement('td');
-      cell.textContent = value;
-      cell.style.cssText = 'padding:10px;border-bottom:1px solid #333';
-      row.appendChild(cell);
+    [profile.username || '—', profile.email || '—', roles.get(profile.id) || 'customer', profile.created_at ? new Date(profile.created_at).toLocaleDateString() : '—'].forEach(value => {
+      const cell = document.createElement('td'); cell.textContent = value;
+      cell.style.cssText = 'padding:10px;border-bottom:1px solid #333'; row.appendChild(cell);
     });
-    table.appendChild(row);
+    const control = controls.get(profile.id) || { warning_count: 0, status: 'active', admin_note: '' };
+    const statusCell = document.createElement('td'); statusCell.style.cssText = 'padding:10px;border-bottom:1px solid #333;min-width:110px';
+    statusCell.textContent = `${control.status || 'active'} · warnings: ${control.warning_count || 0}`; row.appendChild(statusCell);
+    const actionCell = document.createElement('td'); actionCell.style.cssText = 'padding:10px;border-bottom:1px solid #333;min-width:220px';
+    if ((roles.get(profile.id) || 'customer') === 'admin') {
+      actionCell.textContent = 'Admin account protected';
+      row.appendChild(actionCell); table.appendChild(row); return;
+    }
+    const act = async (kind) => {
+      const isWarn = kind === 'warning';
+      const isUnban = kind === 'unban';
+      const ruleTitle = isWarn ? window.prompt('Policy rule violated (short title):', 'Accurate payment/refund information') : (isUnban ? 'Administrator unban' : 'Administrator ban');
+      if (!ruleTitle) return;
+      const eventMessage = isWarn ? window.prompt('Warning message for this customer:', 'Please follow the website policy. Repeated violations may result in an account ban.') : (isUnban ? 'Account restored and warning count reset.' : window.prompt('Reason for account ban:'));
+      if (!eventMessage || !eventMessage.trim()) return;
+      const { data: adminData } = await supabase.auth.getUser(); const adminId = adminData?.user?.id;
+      const nextCount = isUnban ? 0 : Number(control.warning_count || 0) + (isWarn ? 1 : 0);
+      const nextStatus = isUnban ? 'active' : (kind === 'ban' || (isWarn && nextCount >= 2) ? 'banned' : 'warned');
+      const { error: saveError } = await supabase.from('customer_account_controls').upsert({
+        user_id: profile.id, warning_count: nextCount, status: nextStatus,
+        admin_note: isUnban ? null : eventMessage.trim(), banned_at: nextStatus === 'banned' ? new Date().toISOString() : null,
+        updated_by: adminId, updated_at: new Date().toISOString()
+      }, { onConflict: 'user_id' });
+      if (saveError) { message.textContent = 'Policy action failed: ' + saveError.message; return; }
+      const eventType = isUnban ? 'unban' : (nextStatus === 'banned' ? 'ban' : 'warning');
+      const { error: eventError } = await supabase.from('customer_policy_events').insert({ user_id: profile.id, event_type: eventType, rule_title: ruleTitle.trim(), message: eventMessage.trim(), created_by: adminId });
+      if (eventError) { message.textContent = 'Status saved, but event log failed: ' + eventError.message; return; }
+      message.textContent = nextStatus === 'banned' ? 'Customer banned from protected website actions.' : (isUnban ? 'Customer unbanned and warning count reset.' : 'Warning recorded. A second warning automatically bans the account from protected actions.');
+      await loadCustomers();
+    };
+    [['WARN','warning'],['BAN','ban'],['UNBAN / RESET','unban']].forEach(([label,kind]) => {
+      const btn = document.createElement('button'); btn.type='button'; btn.textContent=label; btn.style.cssText='margin:3px;padding:8px';
+      btn.addEventListener('click', () => act(kind)); actionCell.appendChild(btn);
+    });
+    row.appendChild(actionCell); table.appendChild(row);
   });
-
   content.appendChild(table);
-      }
+}
+
+async function loadPolicy() {
+  const content = document.getElementById('sectionContent'); content.replaceChildren();
+  if (!(await verifyAdmin())) return;
+  const heading = document.createElement('h2'); heading.textContent = 'WEBSITE POLICY';
+  const help = document.createElement('p'); help.textContent = 'Edit the policy shown to signed-in customers. State rules clearly and disclose any charges before purchase.';
+  const titleLabel = document.createElement('label'); titleLabel.textContent = 'POLICY TITLE';
+  const titleInput = document.createElement('input'); titleInput.maxLength = 120;
+  const bodyLabel = document.createElement('label'); bodyLabel.textContent = 'POLICY TEXT';
+  const bodyInput = document.createElement('textarea'); bodyInput.maxLength = 12000; bodyInput.style.minHeight = '220px';
+  const save = document.createElement('button'); save.type='button'; save.textContent='SAVE WEBSITE POLICY'; save.className='primary';
+  const { data, error } = await supabase.from('site_policies').select('id,title,body').eq('id',1).maybeSingle();
+  if (error) { const err=document.createElement('p'); err.textContent='Policy could not load: '+error.message; content.append(heading,help,err); return; }
+  titleInput.value=data?.title || 'NEXVORA Website Policy'; bodyInput.value=data?.body || '';
+  save.addEventListener('click', async () => {
+    if (!titleInput.value.trim() || !bodyInput.value.trim()) { message.textContent='Policy title and text are required.'; return; }
+    save.disabled=true; const { data: adminData }=await supabase.auth.getUser();
+    const { error: saveError }=await supabase.from('site_policies').upsert({id:1,title:titleInput.value.trim(),body:bodyInput.value.trim(),updated_by:adminData?.user?.id,updated_at:new Date().toISOString()},{onConflict:'id'});
+    save.disabled=false; message.textContent=saveError?'Policy save failed: '+saveError.message:'Website policy saved.';
+  });
+  content.append(heading,help,titleLabel,titleInput,bodyLabel,bodyInput,save);
+}
 
 const sections = {
   overview: [
@@ -792,7 +845,11 @@ const sections = {
   ],
   customers: [
     'CUSTOMERS',
-    'View registered customers'
+    'View registered customers and manage policy warnings/bans'
+  ],
+  policy: [
+    'POLICY',
+    'Edit the customer-facing website policy'
   ]
 };
 document.querySelectorAll('[data-tab]').forEach(button => {
@@ -829,6 +886,8 @@ document.querySelectorAll('[data-tab]').forEach(button => {
       await loadRefunds();
     } else if (tab === 'customers') {
       await loadCustomers();
+    } else if (tab === 'policy') {
+      await loadPolicy();
     }
   });
 });
